@@ -1,0 +1,386 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { useBalances } from '@/hooks/use-balances';
+import { supabase } from '@/lib/supabase-client';
+import { TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { toast } from 'sonner';
+
+export function TradingPanel() {
+  const { user } = useAuth();
+  const { getBalanceByCurrency } = useBalances();
+  const router = useRouter();
+  
+  const [tradeData, setTradeData] = useState({
+    exchangeType: '',
+    symbol: '',
+    unitWorth: '',
+    takeProfit: '',
+    stopLoss: '',
+    expireTime: '30 minutes',
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showInsufficientFundsAlert, setShowInsufficientFundsAlert] = useState(false);
+
+  const checkSufficientBalance = (amount: number) => {
+    const usdBalance = getBalanceByCurrency('USD');
+    return usdBalance >= amount;
+  };
+
+  const handleInsufficientFunds = () => {
+    setShowInsufficientFundsAlert(true);
+  };
+
+  const handleAlertOkay = () => {
+    setShowInsufficientFundsAlert(false);
+    router.push('/trade-real-account');
+  };
+
+  const handleBuy = async () => {
+    if (!user || !tradeData.exchangeType || !tradeData.symbol || !tradeData.unitWorth) {
+      setMessage({ type: 'error', text: 'Please fill in all required fields' });
+      return;
+    }
+
+    const tradeAmount = parseFloat(tradeData.unitWorth);
+    if (!checkSufficientBalance(tradeAmount)) {
+      handleInsufficientFunds();
+      return;
+    }
+
+    await executeTrade('buy');
+  };
+
+  const handleSell = async () => {
+    if (!user || !tradeData.exchangeType || !tradeData.symbol || !tradeData.unitWorth) {
+      setMessage({ type: 'error', text: 'Please fill in all required fields' });
+      return;
+    }
+
+    const tradeAmount = parseFloat(tradeData.unitWorth);
+    if (!checkSufficientBalance(tradeAmount)) {
+      handleInsufficientFunds();
+      return;
+    }
+
+    await executeTrade('sell');
+  };
+
+  const executeTrade = async (tradeType: 'buy' | 'sell') => {
+    if (!supabase || !user) return;
+
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const expireTime = getExpireTime(tradeData.expireTime);
+      const tradeAmount = parseFloat(tradeData.unitWorth);
+
+      const { error } = await supabase.from('trades').insert({
+        user_id: user.id,
+        exchange_type: tradeData.exchangeType.toLowerCase(),
+        symbol: tradeData.symbol,
+        trade_type: tradeType,
+        volume: 1,
+        unit_worth: tradeAmount,
+        entry_price: tradeAmount,
+        current_price: tradeAmount,
+        take_profit: tradeData.takeProfit ? parseFloat(tradeData.takeProfit) : null,
+        stop_loss: tradeData.stopLoss ? parseFloat(tradeData.stopLoss) : null,
+        expire_time: expireTime,
+        status: 'open',
+      });
+
+      if (error) throw error;
+
+      setMessage({ 
+        type: 'success', 
+        text: `${tradeType.toUpperCase()} trade executed successfully!` 
+      });
+
+      // Reset form
+      setTradeData({
+        exchangeType: '',
+        symbol: '',
+        unitWorth: '',
+        takeProfit: '',
+        stopLoss: '',
+        expireTime: '30 minutes',
+      });
+
+    } catch (error: any) {
+      setMessage({ 
+        type: 'error', 
+        text: `Failed to execute trade: ${error.message}` 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getExpireTime = (interval: string) => {
+    const now = new Date();
+    const intervals = {
+      '30 minutes': 30 * 60 * 1000,
+      '1 hour': 60 * 60 * 1000,
+      '6 hours': 6 * 60 * 60 * 1000,
+      '12 hours': 12 * 60 * 60 * 1000,
+    };
+    return new Date(now.getTime() + (intervals[interval as keyof typeof intervals] || 0)).toISOString();
+  };
+
+  const getSymbolOptions = () => {
+    const options = {
+      FOREX: [
+        { value: 'EURUSD', label: 'EUR/USD (Euro/US Dollar)' },
+        { value: 'USDJPY', label: 'USD/JPY (US Dollar/Japanese Yen)' },
+        { value: 'GBPUSD', label: 'GBP/USD (British Pound/US Dollar)' },
+        { value: 'USDCHF', label: 'USD/CHF (US Dollar/Swiss Franc)' },
+        { value: 'AUDUSD', label: 'AUD/USD (Australian Dollar/US Dollar)' },
+      ],
+      CRYPTO: [
+        { value: 'BTCUSD', label: 'BTC/USD (Bitcoin/US Dollar)' },
+        { value: 'ETHUSD', label: 'ETH/USD (Ethereum/US Dollar)' },
+        { value: 'XRPUSD', label: 'XRP/USD (XRP/US Dollar)' },
+        { value: 'LTCUSD', label: 'LTC/USD (Litecoin/US Dollar)' },
+        { value: 'ADAUSD', label: 'ADA/USD (Cardano/US Dollar)' },
+      ],
+      STOCKS: [
+        { value: 'AAPL', label: 'AAPL (Apple Inc.)' },
+        { value: 'MSFT', label: 'MSFT (Microsoft Corporation)' },
+        { value: 'GOOGL', label: 'GOOGL (Alphabet Inc.)' },
+        { value: 'TSLA', label: 'TSLA (Tesla Inc.)' },
+        { value: 'AMZN', label: 'AMZN (Amazon.com Inc.)' },
+      ],
+      INDICES: [
+        { value: 'SPX', label: 'S&P 500 Index (SPX)' },
+        { value: 'DJI', label: 'Dow Jones Industrial Average (DJI)' },
+        { value: 'IXIC', label: 'NASDAQ Composite Index (IXIC)' },
+        { value: 'FTSE', label: 'FTSE 100 Index (FTSE)' },
+        { value: 'DAX', label: 'DAX 30 Index (DAX)' },
+      ],
+      COMMODITIES: [
+        { value: 'GOLD', label: 'Gold' },
+        { value: 'SILVER', label: 'Silver' },
+        { value: 'OIL', label: 'Crude Oil' },
+        { value: 'NATGAS', label: 'Natural Gas' },
+        { value: 'COPPER', label: 'Copper' },
+      ],
+    };
+
+    return options[tradeData.exchangeType as keyof typeof options] || [];
+  };
+
+  const symbolOptions = getSymbolOptions();
+  const isFormValid = tradeData.exchangeType && tradeData.symbol && tradeData.unitWorth;
+  const balance = getBalanceByCurrency('USD').toFixed(2);
+
+  return (
+    <div className="w-full">
+      <div className="rounded-lg border border-green-500 bg-[#1D2330] h-[538px] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-700">
+          <div className="flex items-center justify-between">
+            <h3 className="text-white font-semibold">
+              <span className="text-green-500 font-bold">BUY</span> / <span className="text-red-500 font-bold">SELL</span>
+            </h3>
+            <div className="text-white text-lg">
+              <span className="text-green-400">Balance</span> = ${balance}
+            </div>
+          </div>
+        </div>
+        
+        <form onSubmit={(e) => e.preventDefault()} className="flex-1 flex flex-col">
+          <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+            {/* Status Message */}
+            {message && (
+              <div className={`p-3 rounded-lg text-sm font-medium ${
+                message.type === 'success' 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : 'bg-red-100 text-red-800 border border-red-200'
+              }`}>
+                {message.text}
+              </div>
+            )}
+
+            {/* Exchange Type */}
+            <div className="space-y-1">
+              <label className="text-sm text-gray-300">Exchange Type</label>
+              <Select 
+                value={tradeData.exchangeType} 
+                onValueChange={(value) => setTradeData({...tradeData, exchangeType: value, symbol: ''})}
+              >
+                <SelectTrigger className="bg-gray-700 border-0 text-white h-12">
+                  <SelectValue placeholder="Select Exchange..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FOREX">FOREX</SelectItem>
+                  <SelectItem value="CRYPTO">CRYPTO</SelectItem>
+                  <SelectItem value="STOCKS">STOCKS</SelectItem>
+                  <SelectItem value="INDICES">INDICES</SelectItem>
+                  <SelectItem value="COMMODITIES">COMMODITIES</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Symbol */}
+            <div className="space-y-1">
+              <label className="text-sm text-gray-300">Symbol</label>
+              <Select 
+                value={tradeData.symbol} 
+                onValueChange={(value) => setTradeData({...tradeData, symbol: value})}
+                disabled={!tradeData.exchangeType}
+              >
+                <SelectTrigger className="bg-gray-700 border-0 text-white h-12">
+                  <SelectValue 
+                    placeholder={tradeData.exchangeType ? "Select Symbol" : "Select Exchange First"} 
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {symbolOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Unit Worth */}
+            <div className="space-y-1">
+              <label className="text-sm text-gray-300">Amount (USD)</label>
+              <Input
+                type="number"
+                placeholder="Enter amount"
+                value={tradeData.unitWorth}
+                onChange={(e) => setTradeData({...tradeData, unitWorth: e.target.value})}
+                className="bg-gray-700 border-0 text-white h-12"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            {/* Take Profit */}
+            <div className="space-y-1">
+              <label className="text-sm text-gray-300">Take Profit (Optional)</label>
+              <Input
+                type="number"
+                placeholder="Enter take profit price"
+                value={tradeData.takeProfit}
+                onChange={(e) => setTradeData({...tradeData, takeProfit: e.target.value})}
+                className="bg-gray-700 border-0 text-white h-12"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            {/* Stop Loss */}
+            <div className="space-y-1">
+              <label className="text-sm text-gray-300">Stop Loss (Optional)</label>
+              <Input
+                type="number"
+                placeholder="Enter stop loss price"
+                value={tradeData.stopLoss}
+                onChange={(e) => setTradeData({...tradeData, stopLoss: e.target.value})}
+                className="bg-gray-700 border-0 text-white h-12"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            {/* Expire Time */}
+            <div className="space-y-1">
+              <label className="text-sm text-gray-300">Expire Time</label>
+              <Select 
+                value={tradeData.expireTime} 
+                onValueChange={(value) => setTradeData({...tradeData, expireTime: value})}
+              >
+                <SelectTrigger className="bg-gray-700 border-0 text-white h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30 minutes">30 minutes</SelectItem>
+                  <SelectItem value="1 hour">1 hour</SelectItem>
+                  <SelectItem value="6 hours">6 hours</SelectItem>
+                  <SelectItem value="12 hours">12 hours</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="p-4 border-t border-gray-700">
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                type="button"
+                onClick={handleBuy}
+                disabled={!isFormValid || isSubmitting}
+                className="bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-bold"
+              >
+                {isSubmitting ? (
+                  'Processing...'
+                ) : (
+                  <>
+                    <TrendingUp className="mr-2 h-5 w-5" />
+                    BUY
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                type="button"
+                onClick={handleSell}
+                disabled={!isFormValid || isSubmitting}
+                className="bg-red-600 hover:bg-red-700 text-white py-6 text-lg font-bold"
+              >
+                {isSubmitting ? (
+                  'Processing...'
+                ) : (
+                  <>
+                    <TrendingDown className="mr-2 h-5 w-5" />
+                    SELL
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </form>
+
+        {/* Insufficient Funds Alert Dialog */}
+        <Dialog open={showInsufficientFundsAlert} onOpenChange={setShowInsufficientFundsAlert}>
+          <DialogContent className="sm:max-w-md bg-[#1D2330] border border-red-500">
+            <DialogHeader>
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="rounded-full bg-red-500/20 p-3">
+                  <Info className="h-8 w-8 text-red-500" />
+                </div>
+                <DialogTitle className="text-white text-center">Insufficient Funds</DialogTitle>
+              </div>
+            </DialogHeader>
+            <div className="text-center text-gray-300 py-4">
+              <p>You don't have enough balance to complete this trade.</p>
+              <p>Please fund your account and try again.</p>
+            </div>
+            <DialogFooter className="sm:justify-center">
+              <Button
+                type="button"
+                onClick={handleAlertOkay}
+                className="bg-red-600 hover:bg-red-700 text-white w-full"
+              >
+                Fund Account
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}
