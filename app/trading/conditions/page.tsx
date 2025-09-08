@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Clock, Shield, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, Clock, Shield, Zap, Check } from 'lucide-react';
 
 const tradingConditions = [
   {

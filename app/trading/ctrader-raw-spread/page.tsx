@@ -40,6 +40,15 @@ const platformHighlights = [
   },
 ];
 
+const spreadComparison = [
+  { pair: 'EUR/USD', rawSpread: '0.0', commission: '$3.00', total: '0.3 pips' },
+  { pair: 'GBP/USD', rawSpread: '0.1', commission: '$3.00', total: '0.4 pips' },
+  { pair: 'USD/JPY', rawSpread: '0.1', commission: '$3.00', total: '0.4 pips' },
+  { pair: 'AUD/USD', rawSpread: '0.2', commission: '$3.00', total: '0.5 pips' },
+  { pair: 'USD/CAD', rawSpread: '0.3', commission: '$3.00', total: '0.6 pips' },
+  { pair: 'EUR/GBP', rawSpread: '0.4', commission: '$3.00', total: '0.7 pips' },
+];
+
 export default function CTraderRawSpreadPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
