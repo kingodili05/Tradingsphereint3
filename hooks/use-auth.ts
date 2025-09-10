@@ -1,6 +1,7 @@
+// hooks/use-auth.ts
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { Profile } from '@/lib/database.types';
 import { User } from '@supabase/supabase-js';
@@ -11,138 +12,138 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false); // indicates first session check done
+  const isComponentMounted = useRef(true);
+  const sessionCheckInterval = useRef<ReturnType<typeof setInterval>>();
 
+  // --- Mount handling ---
   useEffect(() => {
-    console.log('Initializing auth...');
-    
-    let isComponentMounted = true;
-    let profileLoadTimeout: NodeJS.Timeout | undefined;
-
-    const loadProfile = async (userId: string) => {
-      if (!supabase) {
-        console.error('❌ Supabase client not available');
-        if (isComponentMounted) setLoading(false);
-        return;
-      }
-      
-      if (!userId) {
-        if (isComponentMounted) setLoading(false);
-        return;
-      }
-
-      // Prevent multiple simultaneous profile loads
-      if (profileLoadTimeout) {
-        clearTimeout(profileLoadTimeout);
-      }
-
-      try {
-        console.log('🔄 Loading profile for:', userId);
-        
-        const { data, error } = await supabase
-          .from('profiles')
-          .select(`
-            *,
-            packages (
-              id,
-              name,
-              display_name,
-              features
-            )
-          `)
-          .eq('id', userId)
-          .single();
-
-        if (error) {
-          console.log('Profile not found or error:', error.message);
-          // Profile might not exist yet, that's okay
-          if (isComponentMounted) setLoading(false);
-          return;
-        }
-
-        console.log('✅ Profile loaded:', { 
-          name: data?.full_name, 
-          isAdmin: data?.is_admin,
-          accountStatus: data?.account_status 
-        });
-        
-        if (isComponentMounted) {
-          setProfile(data);
-          setIsAdmin(data?.is_admin || false);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('❌ Error loading profile:', error);
-        if (isComponentMounted) setLoading(false);
-      }
+    setMounted(true);
+    return () => {
+      isComponentMounted.current = false;
+      if (sessionCheckInterval.current) clearInterval(sessionCheckInterval.current);
     };
-
-    // Get initial session
-    const getInitialSession = async () => {
-      if (!supabase) {
-        console.log('❌ Supabase client not initialized');
-        if (isComponentMounted) setLoading(false);
-        return;
-      }
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          console.log('✅ Initial session found:', session.user.email);
-          if (isComponentMounted) {
-            setUser(session.user);
-            setIsAuthenticated(true);
-          }
-          await loadProfile(session.user.id);
-        } else {
-          console.log('❌ No initial session found');
-          if (isComponentMounted) setLoading(false);
-        }
-      } catch (error) {
-        console.error('❌ Error getting session:', error);
-        if (isComponentMounted) setLoading(false);
-      }
-    };
-
-    // Start auth check
-    getInitialSession();
-
-    // Set up auth state listener
-    if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('🔄 Auth state change:', event, session?.user?.email);
-        
-        if (session?.user) {
-          if (isComponentMounted) {
-            setUser(session.user);
-            setIsAuthenticated(true);
-          }
-          await loadProfile(session.user.id);
-        } else {
-          if (isComponentMounted) {
-            setUser(null);
-            setProfile(null);
-            setIsAuthenticated(false);
-            setIsAdmin(false);
-            setLoading(false);
-          }
-        }
-      });
-
-      return () => {
-        isComponentMounted = false;
-        subscription.unsubscribe();
-      };
-    } else {
-      return () => {
-        isComponentMounted = false;
-      };
-    }
   }, []);
 
+  // --- Reset auth state safely ---
+  const resetAuthState = () => {
+    if (!isComponentMounted.current) return;
+    setUser(null);
+    setProfile(null);
+    setIsAuthenticated(false);
+    setIsAdmin(false);
+    setLoading(false);
+  };
+
+  // --- Load user profile ---
+  const loadProfile = async (userId: string) => {
+    if (!isComponentMounted.current || !userId) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          packages (
+            id,
+            name,
+            display_name,
+            features
+          )
+        `)
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.log('Profile not found or error:', error.message);
+        return;
+      }
+
+      if (isComponentMounted.current) {
+        setProfile(data as Profile);
+        setIsAdmin((data as any)?.is_admin || false);
+      }
+    } catch (err) {
+      console.error('Error loading profile:', err);
+    }
+  };
+
+  // --- Refresh Supabase session ---
+  const refreshSession = async () => {
+    if (!supabase || !isComponentMounted.current) return;
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.log('Session refresh failed:', error.message);
+        return;
+      }
+
+      if (session?.user && isComponentMounted.current) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+        await loadProfile(session.user.id);
+      }
+    } catch (err) {
+      console.error('Error refreshing session:', err);
+    }
+  };
+
+  // --- Initial session check ---
+  useEffect(() => {
+    if (!mounted) return;
+    if (!supabase) {
+      console.error('Supabase client not available in browser.');
+      if (isComponentMounted.current) setLoading(false);
+      return;
+    }
+
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          if (isComponentMounted.current) {
+            setUser(session.user);
+            setIsAuthenticated(true);
+          }
+          await loadProfile(session.user.id);
+          // Set periodic refresh every 50 minutes
+          sessionCheckInterval.current = setInterval(() => refreshSession(), 50 * 60 * 1000);
+        } else {
+          resetAuthState();
+        }
+      } catch (err) {
+        console.error('Error getting session:', err);
+        resetAuthState();
+      } finally {
+        if (isComponentMounted.current) setInitialLoaded(true);
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // --- Auth state listener ---
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isComponentMounted.current) return;
+      if (session?.user) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+        await loadProfile(session.user.id);
+      } else {
+        resetAuthState();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (sessionCheckInterval.current) clearInterval(sessionCheckInterval.current);
+    };
+  }, [mounted]);
+
+  // --- Refresh profile manually ---
   const refreshProfile = async () => {
     if (!user || !supabase) return { success: false };
-
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -164,24 +165,41 @@ export function useAuth() {
         return { success: false };
       }
 
-      setProfile(data);
-      setIsAdmin(data?.is_admin || false);
+      setProfile(data as Profile);
+      setIsAdmin((data as any)?.is_admin || false);
       return { success: true };
-    } catch (error: any) {
-      console.error('Failed to refresh profile:', error);
+    } catch (err) {
+      console.error('Failed to refresh profile:', err);
       return { success: false };
     } finally {
       setLoading(false);
     }
   };
 
-  const clearCacheAndReload = () => {
+  // --- Clear cache safely ---
+  const clearCache = () => {
     if (typeof window !== 'undefined') {
-      localStorage.clear();
+      localStorage.removeItem('user-profile-cache');
+      localStorage.removeItem('user-balance-cache');
+      localStorage.removeItem('dashboard-cache');
       sessionStorage.clear();
-      window.location.reload();
+      resetAuthState();
     }
   };
+
+  // --- Prevent hydration mismatch ---
+  if (!mounted) {
+    return {
+      user: null,
+      profile: null,
+      loading: true,
+      isAuthenticated: false,
+      isAdmin: false,
+      refreshProfile,
+      clearCache,
+      initialLoaded: false,
+    };
+  }
 
   return {
     user,
@@ -190,6 +208,7 @@ export function useAuth() {
     isAuthenticated,
     isAdmin,
     refreshProfile,
-    clearCacheAndReload,
+    clearCache,
+    initialLoaded,
   };
 }
