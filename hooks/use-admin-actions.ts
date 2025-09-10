@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
-import { Profile, Balance, Trade, Deposit, Withdrawal } from '@/lib/database.types';
+import { Profile, Balance, Trade, Deposit, Withdrawal, Database } from '@/lib/database.types';
 import { toast } from 'sonner';
 
 export function useAdminActions() {
@@ -20,7 +20,7 @@ export function useAdminActions() {
           account_status: 'active',
           is_email_verified: true,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
@@ -45,7 +45,7 @@ export function useAdminActions() {
         .update({ 
           account_status: 'locked',
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
@@ -70,7 +70,7 @@ export function useAdminActions() {
         .update({ 
           account_status: 'active',
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
@@ -104,11 +104,11 @@ export function useAdminActions() {
   
       // 2. Calculate P&L (10% of trade value)
       let pnl = 0;
-      if (result === 'profit') pnl = trade.volume * trade.unit_worth * 0.1;
-      else pnl = -trade.volume * trade.unit_worth * 0.1;
+      if (result === 'profit') pnl = (trade as any).volume * (trade as any).unit_worth * 0.1;
+      else pnl = -(trade as any).volume * (trade as any).unit_worth * 0.1;
   
       // Assume exit_price = current_price when trade is closed
-      const exitPrice = trade.current_price ?? trade.unit_worth;
+      const exitPrice = (trade as any).current_price ?? (trade as any).unit_worth;
   
       // 3. Update the trade with P&L and exit_price
       const { error: updateError } = await supabase
@@ -120,7 +120,7 @@ export function useAdminActions() {
           status: 'closed',
           closed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', tradeId);
   
       if (updateError) throw updateError;
@@ -129,7 +129,7 @@ export function useAdminActions() {
       const { data: balanceRow, error: balanceFetchError } = await supabase
         .from('balances')
         .select('balance')
-        .eq('user_id', trade.user_id)
+        .eq('user_id', (trade as any).user_id)
         .eq('currency', 'USD')
         .single();
   
@@ -137,19 +137,19 @@ export function useAdminActions() {
         throw balanceFetchError;
       }
   
-      const newBalance = (balanceRow?.balance || 0) + pnl;
+      const newBalance = ((balanceRow as any)?.balance || 0) + pnl;
   
       const { error: balanceUpdateError } = await supabase
         .from('balances')
         .upsert(
           {
-            user_id: trade.user_id,
+            user_id: (trade as any).user_id,
             currency: 'USD',
             balance: newBalance,
             available_balance: newBalance,
             locked_balance: 0,
             updated_at: new Date().toISOString(),
-          },
+          } as any,
           { onConflict: 'user_id,currency' }
         );
   
@@ -183,7 +183,7 @@ export function useAdminActions() {
           available_balance: amount,
           locked_balance: 0,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id,currency'
         });
 
@@ -209,7 +209,7 @@ export function useAdminActions() {
         .update({ 
           [field]: !currentValue,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
@@ -237,7 +237,7 @@ export function useAdminActions() {
           is_demo: true,
           account_status: 'active',
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
@@ -251,7 +251,7 @@ export function useAdminActions() {
           balance: 10000, // Demo balance
           available_balance: 10000,
           locked_balance: 0,
-        });
+        } as any);
       
       toast.success('Demo account activated with $10,000');
       return { success: true };
@@ -275,7 +275,7 @@ export function useAdminActions() {
           is_live: true,
           account_status: 'active',
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', userId);
 
       if (error) throw error;
@@ -318,9 +318,9 @@ export function useAdminActions() {
 
       // Update user balance
       const { error: balanceError } = await supabase.rpc('update_user_balance', {
-        p_user_id: deposit.user_id,
-        p_currency: deposit.currency,
-        p_amount: deposit.amount
+        p_user_id: (deposit as any).user_id,
+        p_currency: (deposit as any).currency,
+        p_amount: (deposit as any).amount
       });
 
       if (balanceError) {
@@ -332,24 +332,24 @@ export function useAdminActions() {
           .eq('currency', deposit.currency)
           .single();
 
-        const newBalance = (existingBalance?.balance || 0) + deposit.amount;
-        const newAvailableBalance = (existingBalance?.available_balance || 0) + deposit.amount;
+        const newBalance = ((existingBalance as any)?.balance || 0) + (deposit as any).amount;
+        const newAvailableBalance = ((existingBalance as any)?.available_balance || 0) + (deposit as any).amount;
 
         await supabase
           .from('balances')
           .upsert({
-            user_id: deposit.user_id,
-            currency: deposit.currency,
+            user_id: (deposit as any).user_id,
+            currency: (deposit as any).currency,
             balance: newBalance,
             available_balance: newAvailableBalance,
             locked_balance: 0,
             updated_at: new Date().toISOString()
-          }, {
+          } as any, {
             onConflict: 'user_id,currency'
           });
       }
 
-      toast.success(`Deposit of ${deposit.currency} ${deposit.amount} approved`);
+      toast.success(`Deposit of ${(deposit as any).currency} ${(deposit as any).amount} approved`);
       return { success: true };
     } catch (error: any) {
       toast.error('Failed to approve deposit: ' + error.message);
@@ -605,6 +605,83 @@ export function useAdminActions() {
     }
   };
 
+  // Balance Adjustment with Audit Trail
+  const adjustUserBalance = async (params: {
+    adminId: string;
+    userId: string;
+    amount: number;
+    currency: 'USD' | 'BTC' | 'ETH';
+    accountType: 'demo' | 'live';
+    adjustmentType: 'increase' | 'decrease';
+    adminNotes: string;
+  }) => {
+    const { adminId, userId, amount, currency, accountType, adjustmentType, adminNotes } = params;
+    if (!supabase) return { success: false };
+    
+    setLoading(true);
+
+    try {
+      // Get current balance
+      const { data: balanceData, error: fetchError } = await supabase
+        .from('balances')
+        .select('balance')
+        .eq('user_id', userId)
+        .eq('currency', currency)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      const previousBalance = Number((balanceData as any)?.balance || 0);
+      const newBalance = adjustmentType === 'increase' ? previousBalance + amount : previousBalance - amount;
+
+      if (newBalance < 0) {
+        throw new Error('Cannot reduce balance below 0');
+      }
+
+      // Upsert balance
+      const { error: upsertError } = await (supabase as any).from('balances').upsert({
+        user_id: userId,
+        currency,
+        balance: newBalance,
+        available_balance: newBalance,
+        locked_balance: 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,currency' });
+
+      if (upsertError) throw upsertError;
+
+      // Log audit trail (optional - don't fail if table doesn't exist)
+      try {
+        const { error: logError } = await (supabase as any).from('admin_balance_adjustments').insert([{
+          user_id: userId,
+          admin_id: adminId,
+          currency,
+          adjustment_type: adjustmentType,
+          amount,
+          previous_balance: previousBalance,
+          new_balance: newBalance,
+          account_type: accountType,
+          admin_notes: adminNotes,
+          created_at: new Date().toISOString(),
+        }]);
+        
+        if (logError) {
+          console.warn('Audit trail logging failed:', logError.message);
+        }
+      } catch (auditError) {
+        console.warn('Audit trail table may not exist:', auditError);
+      }
+
+      toast.success(`Balance ${adjustmentType === 'increase' ? 'added' : 'reduced'} successfully`);
+      return { success: true };
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to adjust balance');
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     approveUser,
@@ -612,6 +689,7 @@ export function useAdminActions() {
     unlockAccount,
     setTradeResult,
     updateBalance,
+    adjustUserBalance,
     toggleVerification: async (userId: string, field: string, currentValue: boolean) => {
       if (!supabase) return { success: false };
       

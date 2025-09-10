@@ -386,6 +386,47 @@ export interface Database {
           processed_at?: string | null
         }
       }
+      admin_balance_adjustments: {
+        Row: {
+          id: string
+          user_id: string
+          admin_id: string
+          currency: string
+          adjustment_type: string
+          amount: number
+          previous_balance: number
+          new_balance: number
+          account_type: string
+          admin_notes: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          admin_id: string
+          currency: string
+          adjustment_type: string
+          amount: number
+          previous_balance: number
+          new_balance: number
+          account_type: string
+          admin_notes: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          admin_id?: string
+          currency?: string
+          adjustment_type?: string
+          amount?: number
+          previous_balance?: number
+          new_balance?: number
+          account_type?: string
+          admin_notes?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -407,6 +448,7 @@ export type Message = Database['public']['Tables']['messages']['Row']
 export type HistoricalPrice = Database['public']['Tables']['historical_prices']['Row']
 export type Deposit = Database['public']['Tables']['deposits']['Row']
 export type Withdrawal = Database['public']['Tables']['withdrawals']['Row']
+export type AdminBalanceAdjustment = Database['public']['Tables']['admin_balance_adjustments']['Row']
 
 // Add Signal types
 export interface Signal {
