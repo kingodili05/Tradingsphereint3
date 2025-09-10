@@ -6,29 +6,37 @@ import { supabase } from '@/lib/supabase-client';
 import { Profile } from '@/lib/database.types';
 import { User } from '@supabase/supabase-js';
 
+// --- Simple debounce helper ---
+const debounce = (fn: (...args: any[]) => void, delay: number) => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return (...args: any[]) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false); // indicates first session check done
-  const isComponentMounted = useRef(true);
-  const sessionCheckInterval = useRef<ReturnType<typeof setInterval>>();
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // --- Mount handling ---
+  const isMounted = useRef(true);
+  const sessionCheckInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const initializing = useRef(false);
+
   useEffect(() => {
-    setMounted(true);
+    isMounted.current = true;
     return () => {
-      isComponentMounted.current = false;
+      isMounted.current = false;
       if (sessionCheckInterval.current) clearInterval(sessionCheckInterval.current);
     };
   }, []);
 
-  // --- Reset auth state safely ---
   const resetAuthState = () => {
-    if (!isComponentMounted.current) return;
+    if (!isMounted.current) return;
     setUser(null);
     setProfile(null);
     setIsAuthenticated(false);
@@ -36,9 +44,8 @@ export function useAuth() {
     setLoading(false);
   };
 
-  // --- Load user profile ---
   const loadProfile = async (userId: string) => {
-    if (!isComponentMounted.current || !userId) return;
+    if (!isMounted.current || !userId) return;
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -59,7 +66,7 @@ export function useAuth() {
         return;
       }
 
-      if (isComponentMounted.current) {
+      if (isMounted.current) {
         setProfile(data as Profile);
         setIsAdmin((data as any)?.is_admin || false);
       }
@@ -68,64 +75,66 @@ export function useAuth() {
     }
   };
 
-  // --- Refresh Supabase session ---
   const refreshSession = async () => {
-    if (!supabase || !isComponentMounted.current) return;
+    if (!supabase || !isMounted.current) return;
     try {
       const { data: { session }, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.log('Session refresh failed:', error.message);
-        return;
-      }
-
-      if (session?.user && isComponentMounted.current) {
+      if (error) return;
+      if (session?.user && isMounted.current) {
         setUser(session.user);
         setIsAuthenticated(true);
         await loadProfile(session.user.id);
+      } else {
+        resetAuthState();
       }
     } catch (err) {
       console.error('Error refreshing session:', err);
     }
   };
 
-  // --- Initial session check ---
   useEffect(() => {
-    if (!mounted) return;
-    if (!supabase) {
-      console.error('Supabase client not available in browser.');
-      if (isComponentMounted.current) setLoading(false);
-      return;
-    }
+    if (initializing.current) return;
+    initializing.current = true;
 
-    const getInitialSession = async () => {
+    const init = async () => {
+      if (!supabase) {
+        console.error('Supabase client not available in browser.');
+        setLoading(false);
+        setInitialLoaded(true);
+        return;
+      }
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          if (isComponentMounted.current) {
+          if (isMounted.current) {
             setUser(session.user);
             setIsAuthenticated(true);
           }
           await loadProfile(session.user.id);
-          // Set periodic refresh every 50 minutes
+
           sessionCheckInterval.current = setInterval(() => refreshSession(), 50 * 60 * 1000);
         } else {
           resetAuthState();
         }
       } catch (err) {
-        console.error('Error getting session:', err);
+        console.error('Error initializing session:', err);
         resetAuthState();
       } finally {
-        if (isComponentMounted.current) setInitialLoaded(true);
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+          setInitialLoaded(true);
+        }
       }
     };
 
-    getInitialSession();
+    init();
 
-    // --- Auth state listener ---
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isComponentMounted.current) return;
+    // --- Debounced auth state listener ---
+    const debouncedAuthListener = debounce(async (event: string, session: any) => {
+      if (!isMounted.current) return;
+
       if (session?.user) {
         setUser(session.user);
         setIsAuthenticated(true);
@@ -133,15 +142,16 @@ export function useAuth() {
       } else {
         resetAuthState();
       }
-    });
+    }, 50); // 50ms debounce prevents rapid reload loops
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(debouncedAuthListener);
 
     return () => {
       subscription.unsubscribe();
       if (sessionCheckInterval.current) clearInterval(sessionCheckInterval.current);
     };
-  }, [mounted]);
+  }, []);
 
-  // --- Refresh profile manually ---
   const refreshProfile = async () => {
     if (!user || !supabase) return { success: false };
     try {
@@ -176,7 +186,6 @@ export function useAuth() {
     }
   };
 
-  // --- Clear cache safely ---
   const clearCache = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user-profile-cache');
@@ -186,20 +195,6 @@ export function useAuth() {
       resetAuthState();
     }
   };
-
-  // --- Prevent hydration mismatch ---
-  if (!mounted) {
-    return {
-      user: null,
-      profile: null,
-      loading: true,
-      isAuthenticated: false,
-      isAdmin: false,
-      refreshProfile,
-      clearCache,
-      initialLoaded: false,
-    };
-  }
 
   return {
     user,
