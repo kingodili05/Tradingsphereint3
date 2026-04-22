@@ -24,9 +24,9 @@ export function TradesTable({ trades }: TradesTableProps) {
   };
 
   return (
-    <div 
+    <div
       className="rounded-lg border border-green-500"
-      style={{ backgroundColor: '#1D2330', height: '370px' }}
+      style={{ backgroundColor: '#1D2330' }}
     >
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
@@ -54,8 +54,8 @@ export function TradesTable({ trades }: TradesTableProps) {
         </div>
       </div>
       
-      <div className="p-4" style={{ height: '300px' }}>
-        <div className="overflow-auto h-full" id="trades-table">
+      <div className="p-4">
+        <div className="overflow-x-auto" id="trades-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-white border-b border-gray-700">

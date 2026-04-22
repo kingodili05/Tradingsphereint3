@@ -69,10 +69,14 @@ export function DashboardSidebar({
     { icon: HelpCircle, label: "Help", href: "/user-support" },
   ];
 
+  // Show only first 5 items in bottom nav (most important)
+  const bottomNavItems = sidebarItems.slice(0, 5);
+
   return (
     <>
+      {/* Desktop Sidebar — hidden on mobile */}
       <aside
-        className="fixed left-0 top-0 h-full flex flex-col border-r border-gray-700 z-40"
+        className="hidden md:flex fixed left-0 top-0 h-full flex-col border-r border-gray-700 z-40"
         style={{ width: "90px", backgroundColor: "#1D2330", marginTop: "48px" }}
       >
       {/* Logo */}
@@ -99,11 +103,7 @@ export function DashboardSidebar({
                 onClick={() => router.push(item.href)}
                 className="w-full"
               >
-                <div
-                  className={`flex flex-col items-center p-2 rounded-lg transition-colors relative ${
-                    router ? "hover:bg-gray-700" : "hover:bg-gray-700"
-                  }`}
-                >
+                <div className="flex flex-col items-center p-2 rounded-lg transition-colors relative hover:bg-gray-700">
                   <item.icon className="h-6 w-6 text-white mb-1" />
                   <span className="text-xs text-white text-center">
                     {item.label}
@@ -131,6 +131,37 @@ export function DashboardSidebar({
         </button>
       </div>
       </aside>
+
+      {/* Mobile Bottom Navigation — visible only on mobile */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-gray-700 px-2 py-2"
+        style={{ backgroundColor: "#1D2330" }}
+      >
+        {bottomNavItems.map((item, index) =>
+          item.href ? (
+            <button
+              key={index}
+              onClick={() => router.push(item.href)}
+              className="flex flex-col items-center flex-1 py-1 relative"
+            >
+              <item.icon className="h-5 w-5 text-white mb-0.5" />
+              <span className="text-[10px] text-white">{item.label}</span>
+              {item.badge && item.badge > 0 && (
+                <span className="absolute top-0 right-2 bg-red-600 text-white text-[9px] rounded-full h-4 w-4 flex items-center justify-center">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          ) : null
+        )}
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center flex-1 py-1"
+        >
+          <LogOut className="h-5 w-5 text-white mb-0.5" />
+          <span className="text-[10px] text-white">Logout</span>
+        </button>
+      </nav>
     </>
   );
 }

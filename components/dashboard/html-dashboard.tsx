@@ -60,7 +60,7 @@ export function HtmlDashboard() {
         />
 
         {/* Main Content */}
-        <div className="flex-1" style={{ marginLeft: '90px' }}>
+        <div className="flex-1 md:ml-[90px] pb-16 md:pb-0">
           {/* ✅ TradingView Ticker at the very top */}
           <TradingViewTicker />
 

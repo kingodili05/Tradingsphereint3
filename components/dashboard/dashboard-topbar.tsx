@@ -79,23 +79,23 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
-            {/* Demo Account */}
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Demo Account — hidden on mobile */}
             <button
               onClick={handleRequestDemo}
               disabled={actionLoading}
-              className="px-4 py-2 text-white border border-red-500 rounded text-sm font-bold bg-red-900/60 hover:bg-red-900"
+              className="hidden sm:block px-3 py-2 text-white border border-red-500 rounded text-xs md:text-sm font-bold bg-red-900/60 hover:bg-red-900"
             >
-              {actionLoading ? 'Processing...' : 'Request Demo Account'}
+              {actionLoading ? '...' : 'Demo Acc'}
             </button>
 
-            {/* Live Account */}
+            {/* Live Account — hidden on mobile */}
             <button
               onClick={handleRequestLive}
               disabled={actionLoading}
-              className="px-4 py-2 text-white border border-green-500 rounded text-sm font-bold bg-green-900/60 hover:bg-green-900"
+              className="hidden sm:block px-3 py-2 text-white border border-green-500 rounded text-xs md:text-sm font-bold bg-green-900/60 hover:bg-green-900"
             >
-              {profile?.account_type === 'live' ? 'Live Acc Active' : 'Request Live Account'}
+              {profile?.account_type === 'live' ? 'Live Active' : 'Live Acc'}
             </button>
 
             {/* Messages */}
@@ -169,7 +169,7 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
               </button>
 
               {showProfileDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-[28rem] bg-gray-900/95 rounded-xl shadow-xl border border-gray-700 z-50">
+                <div className="absolute right-0 top-full mt-2 w-screen max-w-[28rem] bg-gray-900/95 rounded-xl shadow-xl border border-gray-700 z-50" style={{ maxWidth: 'min(28rem, calc(100vw - 1rem))' }}>
                   {/* User Header */}
                   <div className="p-5 border-b border-gray-700">
                     <div className="flex items-center space-x-4">

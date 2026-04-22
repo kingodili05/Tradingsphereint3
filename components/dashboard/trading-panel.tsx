@@ -240,7 +240,7 @@ export function TradingPanel() {
 
   return (
     <div className="w-full">
-      <div className="rounded-lg border border-green-500 bg-[#1D2330] h-[538px] flex flex-col">
+      <div className="rounded-lg border border-green-500 bg-[#1D2330] flex flex-col">
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-white font-semibold">

@@ -2,20 +2,16 @@
 
 export function CryptoChart() {
   return (
-    <div 
+    <div
       className="rounded border border-gray-600 overflow-hidden"
-      style={{ 
-        height: '560px', 
-        backgroundColor: '#1D2330',
-        boxShadow: 'inset 0 -20px 0 0 #262B38'
-      }}
+      style={{ backgroundColor: '#1D2330', boxShadow: 'inset 0 -20px 0 0 #262B38' }}
     >
-      <div className="h-full p-1">
-        <iframe 
-          src="https://widget.coinlib.io/widget?type=chart&theme=dark&coin_id=859&pref_coin_id=1505" 
-          width="100%" 
-          height="536" 
-          scrolling="auto" 
+      <div className="p-1" style={{ height: '560px' }}>
+        <iframe
+          src="https://widget.coinlib.io/widget?type=chart&theme=dark&coin_id=859&pref_coin_id=1505"
+          width="100%"
+          height="536"
+          scrolling="auto"
           className="border-0"
           title="Crypto Chart"
         />

@@ -77,10 +77,7 @@ export function MarketWidget() {
   }, []);
 
   return (
-    <div 
-      className="rounded-lg border border-green-500 overflow-hidden"
-      style={{ height: '538px' }}
-    >
+    <div className="rounded-lg border border-green-500 overflow-hidden" style={{ minHeight: '400px', height: '538px' }}>
       <div id="market-overview-widget" className="tradingview-widget-container h-full">
         <div className="tradingview-widget-container__widget h-full"></div>
       </div>

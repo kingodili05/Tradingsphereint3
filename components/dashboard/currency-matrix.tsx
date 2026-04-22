@@ -40,11 +40,8 @@ export function CurrencyMatrix() {
   }, []);
 
   return (
-    <div 
-      className="rounded-lg border border-green-500 overflow-hidden"
-      style={{ height: '370px' }}
-    >
-      <div id="currency-matrix-widget" className="tradingview-widget-container h-full">
+    <div className="rounded-lg border border-green-500 overflow-hidden" style={{ minHeight: '370px' }}>
+      <div id="currency-matrix-widget" className="tradingview-widget-container" style={{ height: '370px' }}>
         <div className="tradingview-widget-container__widget h-full"></div>
       </div>
     </div>
