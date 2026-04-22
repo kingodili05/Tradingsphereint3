@@ -240,192 +240,148 @@ export function TradingPanel() {
 
   return (
     <div className="w-full">
-      <div className="rounded-lg border border-green-500 bg-[#1D2330] flex flex-col">
-      <div className="p-4 border-b border-gray-700">
+      <div className="rounded-xl border border-green-500/50 bg-[#1D2330] flex flex-col">
+      <div className="px-4 py-3 border-b border-white/8">
         <div className="flex items-center justify-between">
-          <h3 className="text-white font-semibold">
-            <span className="text-green-500 font-bold">BUY</span> / <span className="text-red-500 font-bold">SELL</span>
+          <h3 className="text-white font-bold text-sm">
+            <span className="text-green-400">BUY</span>
+            <span className="text-white/30 mx-1">/</span>
+            <span className="text-red-400">SELL</span>
           </h3>
-          <div className="text-white text-lg">
-            <span className="text-green-400">Balance</span> = ${getBalanceByCurrency('USD').toFixed(2)}
+          <div className="text-right">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Balance</span>
+            <p className="text-green-400 font-bold text-sm leading-tight">${getBalanceByCurrency('USD').toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
       </div>
-      
+
       <form onSubmit={(e) => e.preventDefault()} className="flex-1 flex flex-col">
-        <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+        <div className="p-4 space-y-3 flex-1">
           {/* Message Display */}
           {message && (
-            <div className={`p-3 rounded-lg text-sm font-medium ${
-              message.type === 'success' 
-                ? 'bg-green-100 text-green-800 border border-green-200' 
-                : 'bg-red-100 text-red-800 border border-red-200'
+            <div className={`p-3 rounded-xl text-xs font-medium animate-fade-down ${
+              message.type === 'success'
+                ? 'bg-green-500/15 text-green-300 border border-green-500/25'
+                : 'bg-red-500/15 text-red-300 border border-red-500/25'
             }`}>
               {message.text}
             </div>
           )}
 
           {/* Exchange Type */}
-          <div>
-            <div className="flex items-stretch rounded">
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-l flex items-center min-w-[100px] font-medium">
-                Exchange
-              </div>
-              <Select 
-                value={tradeData.exchangeType} 
-                onValueChange={(value) => setTradeData({...tradeData, exchangeType: value, symbol: ''})}
-              >
-                <SelectTrigger className="bg-gray-700 border-0 text-white rounded-none flex-1 h-12">
-                  <SelectValue placeholder="Select Exchange..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FOREX">FOREX</SelectItem>
-                  <SelectItem value="CRYPTO">CRYPTO</SelectItem>
-                  <SelectItem value="STOCKS">STOCKS</SelectItem>
-                  <SelectItem value="INDICES">INDICES</SelectItem>
-                  <SelectItem value="COMMODITIES">COMMODITIES</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-r flex items-center min-w-[80px] justify-center font-medium">
-                {tradeData.exchangeType || 'NONE'}
-              </div>
-            </div>
+          <div className="space-y-1">
+            <label className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Exchange</label>
+            <Select
+              value={tradeData.exchangeType}
+              onValueChange={(value) => setTradeData({...tradeData, exchangeType: value, symbol: ''})}
+            >
+              <SelectTrigger className="bg-gray-800/80 border border-white/8 text-white rounded-xl h-11 text-sm hover:border-green-500/40 transition-colors">
+                <SelectValue placeholder="Select exchange..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FOREX">FOREX</SelectItem>
+                <SelectItem value="CRYPTO">CRYPTO</SelectItem>
+                <SelectItem value="STOCKS">STOCKS</SelectItem>
+                <SelectItem value="INDICES">INDICES</SelectItem>
+                <SelectItem value="COMMODITIES">COMMODITIES</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Symbol */}
-          <div>
-            <div className="flex items-stretch rounded">
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-l flex items-center min-w-[100px] font-medium">
-                Symbols
-              </div>
-              <Select 
-                value={tradeData.symbol} 
-                onValueChange={(value) => setTradeData({...tradeData, symbol: value})}
-                disabled={!tradeData.exchangeType}
-              >
-                <SelectTrigger className="bg-gray-700 border-0 text-white rounded-none flex-1 h-12">
-                  <SelectValue placeholder={tradeData.exchangeType ? "Select Symbol" : "No Exchange Selected"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {symbolOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-r flex items-center min-w-[80px] justify-center font-medium">
-                {tradeData.exchangeType || 'NONE'}
-              </div>
-            </div>
+          <div className="space-y-1">
+            <label className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Symbol</label>
+            <Select
+              value={tradeData.symbol}
+              onValueChange={(value) => setTradeData({...tradeData, symbol: value})}
+              disabled={!tradeData.exchangeType}
+            >
+              <SelectTrigger className="bg-gray-800/80 border border-white/8 text-white rounded-xl h-11 text-sm hover:border-green-500/40 transition-colors disabled:opacity-40">
+                <SelectValue placeholder={tradeData.exchangeType ? 'Select symbol...' : 'Choose exchange first'} />
+              </SelectTrigger>
+              <SelectContent>
+                {symbolOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Unit Worth */}
-          <div>
-            <div className="flex items-stretch rounded">
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-l flex items-center min-w-[100px] font-medium">
-                Unit Worth
-              </div>
+          {/* Amount + TP + SL in a responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Amount ($)</label>
               <Input
                 type="number"
-                placeholder="Enter Amount"
+                placeholder="0.00"
                 value={tradeData.unitWorth}
                 onChange={(e) => setTradeData({...tradeData, unitWorth: e.target.value})}
-                className="bg-gray-700 border-0 text-white rounded-none flex-1 h-12"
+                className="bg-gray-800/80 border border-white/8 text-white rounded-xl h-11 text-sm hover:border-green-500/40 focus:border-green-500/60 transition-colors"
               />
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-r flex items-center min-w-[80px] justify-center font-medium">
-                {tradeData.exchangeType || 'NONE'}
-              </div>
             </div>
-          </div>
-
-          {/* Take Profit */}
-          <div>
-            <div className="flex items-stretch rounded">
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-l flex items-center min-w-[100px] font-medium">
-                Take Profit
-              </div>
+            <div className="space-y-1">
+              <label className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Take Profit</label>
               <Input
                 type="number"
-                placeholder="Enter Take Profit"
+                placeholder="Optional"
                 value={tradeData.takeProfit}
                 onChange={(e) => setTradeData({...tradeData, takeProfit: e.target.value})}
-                className="bg-gray-700 border-0 text-white rounded-none flex-1 h-12"
+                className="bg-gray-800/80 border border-white/8 text-white rounded-xl h-11 text-sm hover:border-green-500/40 focus:border-green-500/60 transition-colors"
               />
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-r flex items-center min-w-[80px] justify-center font-medium">
-                {tradeData.exchangeType || 'NONE'}
-              </div>
             </div>
-          </div>
-
-          {/* Stop Loss */}
-          <div>
-            <div className="flex items-stretch rounded">
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-l flex items-center min-w-[100px] font-medium">
-                Stop Loss
-              </div>
+            <div className="space-y-1">
+              <label className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Stop Loss</label>
               <Input
                 type="number"
-                placeholder="Enter Stop Loss"
+                placeholder="Optional"
                 value={tradeData.stopLoss}
                 onChange={(e) => setTradeData({...tradeData, stopLoss: e.target.value})}
-                className="bg-gray-700 border-0 text-white rounded-none flex-1 h-12"
+                className="bg-gray-800/80 border border-white/8 text-white rounded-xl h-11 text-sm hover:border-red-500/40 focus:border-red-500/60 transition-colors"
               />
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-r flex items-center min-w-[80px] justify-center font-medium">
-                {tradeData.exchangeType || 'NONE'}
-              </div>
             </div>
           </div>
 
           {/* Expire Time */}
-          <div>
-            <div className="flex items-stretch rounded">
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-l flex items-center min-w-[100px] font-medium">
-                Expire Time
-              </div>
-              <Select 
-                value={tradeData.expireTime} 
-                onValueChange={(value) => setTradeData({...tradeData, expireTime: value})}
-              >
-                <SelectTrigger className="bg-gray-700 border-0 text-white rounded-none flex-1 h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30 minutes">30 minutes</SelectItem>
-                  <SelectItem value="1 hour">1 hour</SelectItem>
-                  <SelectItem value="6 hours">6 hours</SelectItem>
-                  <SelectItem value="12 hours">12 hours</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="bg-gray-600 px-4 py-3 text-white text-sm rounded-r flex items-center min-w-[80px] justify-center font-medium">
-                Mins/hrs
-              </div>
-            </div>
+          <div className="space-y-1">
+            <label className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Expires In</label>
+            <Select
+              value={tradeData.expireTime}
+              onValueChange={(value) => setTradeData({...tradeData, expireTime: value})}
+            >
+              <SelectTrigger className="bg-gray-800/80 border border-white/8 text-white rounded-xl h-11 text-sm hover:border-green-500/40 transition-colors">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30 minutes">30 minutes</SelectItem>
+                <SelectItem value="1 hour">1 hour</SelectItem>
+                <SelectItem value="6 hours">6 hours</SelectItem>
+                <SelectItem value="12 hours">12 hours</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        
-        <div className="border-t border-gray-700 p-4">
-          <div className="flex justify-between space-x-4">
+
+        <div className="border-t border-white/8 p-4">
+          <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
               onClick={handleSell}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-6 text-lg flex-1 rounded"
+              className="bg-red-600 hover:bg-red-500 text-white font-bold py-5 text-sm rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50"
               disabled={!isFormValid || isSubmitting}
             >
-              <div className="flex flex-col items-center">
-                <TrendingDown className="h-5 w-5 mb-1" />
+              <div className="flex items-center justify-center gap-2">
+                <TrendingDown className="h-4 w-4" />
                 <span>SELL</span>
               </div>
             </Button>
-            
             <Button
               type="button"
               onClick={handleBuy}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-6 text-lg flex-1 rounded"
+              className="bg-green-600 hover:bg-green-500 text-white font-bold py-5 text-sm rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50"
               disabled={!isFormValid || isSubmitting}
             >
-              <div className="flex flex-col items-center">
-                <TrendingUp className="h-5 w-5 mb-1" />
+              <div className="flex items-center justify-center gap-2">
+                <TrendingUp className="h-4 w-4" />
                 <span>BUY</span>
               </div>
             </Button>

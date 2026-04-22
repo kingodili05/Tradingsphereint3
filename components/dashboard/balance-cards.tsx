@@ -12,18 +12,15 @@ interface BalanceCardsProps {
 
 export function BalanceCards({ balances, profile, btcPrice, getBalanceBTC }: BalanceCardsProps) {
   const getBalanceByCurrency = (currency: string) => balances.find(b => b.currency === currency)?.balance || 0;
-
-  const formatUsd = (v: number) => `$${v.toFixed(2)}`;
-  const formatBtc = (v: number) => v.toFixed(8);
+  const formatUsd = (v: number) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatBtc = (v: number) => v.toFixed(6);
 
   const computeBalanceBtc = (currency: string) => {
     if (typeof getBalanceBTC === 'function') {
       const val = getBalanceBTC(currency);
       return typeof val === 'number' ? val : 0;
     }
-
     if (!btcPrice || btcPrice === 0) return 0;
-
     const fallbackRates: Record<string, number> = { USD: 1, BTC: 43000, ETH: 2600 };
     const balance = getBalanceByCurrency(currency);
     const usdValue = balance * (fallbackRates[currency as keyof typeof fallbackRates] || 1);
@@ -33,7 +30,7 @@ export function BalanceCards({ balances, profile, btcPrice, getBalanceBTC }: Bal
   const accountUsdBalance = getBalanceByCurrency('USD');
   const accountBtcEquivalent = computeBalanceBtc('USD');
   const btcBalance = getBalanceByCurrency('BTC');
-  const btcBalanceTotal = btcBalance + accountBtcEquivalent; // BTC + USD equivalent in BTC
+  const btcBalanceTotal = btcBalance + accountBtcEquivalent;
   const referralBonus = profile?.referral_bonus || 0;
   const referralBtcEquivalent = referralBonus > 0 ? computeBalanceBtc('USD') : 0;
 
@@ -41,63 +38,83 @@ export function BalanceCards({ balances, profile, btcPrice, getBalanceBTC }: Bal
     {
       title: 'Account Balance',
       value: formatUsd(accountUsdBalance),
-      subValueBtc: accountBtcEquivalent,
+      sub: btcPrice && accountBtcEquivalent > 0 ? `≈ ${formatBtc(accountBtcEquivalent)} BTC` : null,
       icon: DollarSign,
-      bgColor: 'bg-blue-500',
-      iconColor: 'text-white',
+      gradient: 'from-blue-500 to-blue-700',
+      glow: 'shadow-blue-500/20',
+      ring: 'border-blue-500/25',
+      iconBg: 'bg-blue-500/20',
+      iconColor: 'text-blue-300',
+      accent: 'bg-blue-500/8',
     },
     {
       title: 'BTC Balance',
       value: formatBtc(btcBalanceTotal),
-      subValueBtc: 0, // already shown in main value
+      sub: btcPrice ? `≈ $${(btcBalanceTotal * btcPrice).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null,
       icon: Bitcoin,
-      bgColor: 'bg-green-500',
-      iconColor: 'text-white',
+      gradient: 'from-orange-400 to-amber-600',
+      glow: 'shadow-orange-500/20',
+      ring: 'border-orange-500/25',
+      iconBg: 'bg-orange-500/20',
+      iconColor: 'text-orange-300',
+      accent: 'bg-orange-500/8',
     },
     {
-      title: "Referral's Bonus",
+      title: "Referral Bonus",
       value: `$${referralBonus.toFixed(2)}`,
-      subValueBtc: referralBtcEquivalent,
+      sub: referralBtcEquivalent > 0 ? `≈ ${formatBtc(referralBtcEquivalent)} BTC` : null,
       icon: Gift,
-      bgColor: 'bg-yellow-500',
-      iconColor: 'text-white',
+      gradient: 'from-purple-500 to-violet-700',
+      glow: 'shadow-purple-500/20',
+      ring: 'border-purple-500/25',
+      iconBg: 'bg-purple-500/20',
+      iconColor: 'text-purple-300',
+      accent: 'bg-purple-500/8',
     },
     {
       title: 'Package Plan',
       value: (profile as any)?.packages?.display_name || 'STARTER',
-      subValueBtc: 0,
+      sub: 'Active plan',
       icon: Package,
-      bgColor: 'bg-red-500',
-      iconColor: 'text-white',
+      gradient: 'from-green-500 to-emerald-700',
+      glow: 'shadow-green-500/20',
+      ring: 'border-green-500/25',
+      iconBg: 'bg-green-500/20',
+      iconColor: 'text-green-300',
+      accent: 'bg-green-500/8',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card, index) => (
-        <div key={index} className="relative">
-          <div className={`${card.bgColor} rounded-lg overflow-hidden`} style={{ backgroundColor: '#1D2330' }}>
-            <div className="p-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-1">{card.value}</h3>
-                <p className="text-white font-bold text-lg">{card.title}</p>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      {cards.map((card, i) => (
+        <div
+          key={i}
+          className={`relative rounded-2xl border ${card.ring} ${card.accent} p-4 md:p-5 overflow-hidden
+            hover:-translate-y-1 hover:shadow-xl ${card.glow} transition-all duration-300 cursor-default
+            animate-fade-up`}
+          style={{ animationDelay: `${i * 80}ms` }}
+        >
+          {/* Background gradient orb */}
+          <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full bg-gradient-to-br ${card.gradient} opacity-15 blur-xl`} />
 
-                {card.title !== 'BTC Balance' && btcPrice && card.subValueBtc > 0 && (
-                  <p className="text-sm text-gray-300 mt-1">
-                    ≈ <span className="font-medium">{formatBtc(card.subValueBtc)}</span> BTC
-                  </p>
-                )}
-
-                {!btcPrice && card.title !== 'BTC Balance' && (
-                  <p className="text-sm text-gray-500 mt-1">BTC price unavailable</p>
-                )}
-              </div>
-
-              <div className="text-right">
-                <card.icon className={`h-16 w-16 ${card.iconColor}`} style={{ fontSize: '65px' }} />
-              </div>
-            </div>
+          {/* Icon */}
+          <div className={`w-9 h-9 rounded-xl ${card.iconBg} flex items-center justify-center mb-3`}>
+            <card.icon className={`h-4.5 w-4.5 ${card.iconColor}`} style={{ width: '18px', height: '18px' }} />
           </div>
+
+          {/* Value */}
+          <p className="text-white font-bold text-lg md:text-xl leading-none mb-1 truncate">
+            {card.value}
+          </p>
+
+          {/* Title */}
+          <p className="text-gray-400 text-xs font-medium">{card.title}</p>
+
+          {/* Sub value */}
+          {card.sub && (
+            <p className="text-gray-500 text-[10px] mt-1 truncate">{card.sub}</p>
+          )}
         </div>
       ))}
     </div>
