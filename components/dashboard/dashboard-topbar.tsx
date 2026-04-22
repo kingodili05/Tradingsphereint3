@@ -18,9 +18,6 @@ import { Drawer } from 'vaul';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 
 interface DashboardTopbarProps {
@@ -262,6 +259,114 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
     },
   };
 
+  /* ── Shared verification upload content ── */
+  const VerifyContent = () => {
+    if (!verifyModal) return null;
+    const cfg = modalConfig[verifyModal];
+    return (
+      <>
+        <div className="px-6 pt-5 pb-4 border-b border-white/8 flex items-start justify-between">
+          <div>
+            <p className="text-white font-bold text-lg flex items-center gap-2">
+              <span>{cfg.icon}</span> {cfg.title}
+            </p>
+            <p className="text-gray-400 text-sm mt-1">{cfg.description}</p>
+          </div>
+          <button
+            onClick={() => { setVerifyModal(null); setDocFile(null); setDocPreview(null); }}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/8 transition-all ml-4 shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="bg-white/4 rounded-xl p-4 border border-white/8">
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Accepted documents</p>
+            <ul className="space-y-1.5">
+              {cfg.items.map(item => (
+                <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            {!docFile ? (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-white/15 rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-green-500/50 hover:bg-green-500/5 transition-all duration-200 active:scale-98 group"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white/6 flex items-center justify-center group-hover:bg-green-500/10 transition-colors">
+                  <Upload className="h-6 w-6 text-gray-400 group-hover:text-green-400 transition-colors" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-white font-semibold">Tap to upload</p>
+                  <p className="text-xs text-gray-500 mt-0.5">JPG, PNG, WebP or PDF · Max 10MB</p>
+                </div>
+              </button>
+            ) : (
+              <div className="rounded-2xl border border-green-500/30 bg-green-500/5 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-green-500/15 flex items-center justify-center shrink-0 overflow-hidden">
+                    {docFile.type.startsWith('image/') && docPreview
+                      ? <img src={docPreview} alt="preview" className="w-12 h-12 object-cover" />
+                      : docFile.type.startsWith('image/')
+                        ? <ImageIcon className="h-5 w-5 text-green-400" />
+                        : <FileText className="h-5 w-5 text-green-400" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{docFile.name}</p>
+                    <p className="text-xs text-gray-400">{(docFile.size / 1024 / 1024).toFixed(2)} MB · Ready to submit</p>
+                  </div>
+                  <button
+                    onClick={() => { setDocFile(null); setDocPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                    className="p-1.5 rounded-lg hover:bg-white/8 text-gray-500 hover:text-white transition-all shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Your document will be reviewed within 24–48 business hours.
+          </p>
+        </div>
+
+        <div className="px-6 pb-8 flex gap-3">
+          <button
+            onClick={() => { setVerifyModal(null); setDocFile(null); setDocPreview(null); }}
+            className="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 text-sm font-medium transition-all active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDocSubmit}
+            disabled={!docFile || uploading}
+            className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {uploading
+              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting…</>
+              : <><ShieldCheck className="h-4 w-4" />Submit for Review</>
+            }
+          </button>
+        </div>
+      </>
+    );
+  };
+
   return (
     <>
       {/* ── Topbar ── */}
@@ -474,115 +579,41 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
         </Drawer.Portal>
       </Drawer.Root>
 
-      {/* ── Verification document upload modal ── */}
-      <Dialog open={verifyModal !== null} onOpenChange={(open) => { if (!open) { setVerifyModal(null); setDocFile(null); setDocPreview(null); } }}>
-        <DialogContent
-          className="max-w-md border border-white/10 text-white p-0 overflow-hidden"
-          style={{ backgroundColor: '#151c28' }}
+      {/* ── Verification document upload — Desktop Dialog ── */}
+      {!isMobile && (
+        <Dialog open={verifyModal !== null} onOpenChange={(open) => { if (!open) { setVerifyModal(null); setDocFile(null); setDocPreview(null); } }}>
+          <DialogContent
+            className="max-w-md border border-white/10 text-white p-0 overflow-hidden"
+            style={{ backgroundColor: '#151c28' }}
+          >
+            {verifyModal && <VerifyContent />}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* ── Verification document upload — Mobile Drawer ── */}
+      {isMobile && (
+        <Drawer.Root
+          open={verifyModal !== null}
+          onOpenChange={(open) => { if (!open) { setVerifyModal(null); setDocFile(null); setDocPreview(null); } }}
         >
-          {verifyModal && (
-            <>
-              <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/8">
-                <DialogTitle className="text-white flex items-center gap-2 text-lg">
-                  <span>{modalConfig[verifyModal].icon}</span>
-                  {modalConfig[verifyModal].title}
-                </DialogTitle>
-                <DialogDescription className="text-gray-400 text-sm mt-1">
-                  {modalConfig[verifyModal].description}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="px-6 py-5 space-y-4">
-                {/* Accepted documents list */}
-                <div className="bg-white/4 rounded-xl p-4 border border-white/8">
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Accepted documents</p>
-                  <ul className="space-y-1">
-                    {modalConfig[verifyModal].items.map(item => (
-                      <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 bg-black/60 z-40" style={{ backdropFilter: 'blur(4px)' }} />
+            <Drawer.Content
+              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-white/10 overflow-hidden"
+              style={{ backgroundColor: '#151c28', maxHeight: '92vh' }}
+            >
+              <Drawer.Title className="sr-only">Document Verification</Drawer.Title>
+              <div className="overflow-y-auto overscroll-contain">
+                <div className="flex justify-center pt-3 pb-1">
+                  <div className="w-10 h-1 rounded-full bg-white/20" />
                 </div>
-
-                {/* File upload area */}
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  {!docFile ? (
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-white/15 rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-green-500/50 hover:bg-green-500/5 transition-all duration-200 group"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-white/6 flex items-center justify-center group-hover:bg-green-500/10 transition-colors">
-                        <Upload className="h-5 w-5 text-gray-400 group-hover:text-green-400 transition-colors" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-white font-medium">Click to upload</p>
-                        <p className="text-xs text-gray-500 mt-0.5">JPG, PNG, WebP or PDF · Max 10MB</p>
-                      </div>
-                    </button>
-                  ) : (
-                    <div className="rounded-2xl border border-green-500/30 bg-green-500/5 p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center shrink-0">
-                          {docFile.type.startsWith('image/') ? (
-                            docPreview
-                              ? <img src={docPreview} alt="preview" className="w-10 h-10 rounded-xl object-cover" />
-                              : <ImageIcon className="h-5 w-5 text-green-400" />
-                          ) : (
-                            <FileText className="h-5 w-5 text-green-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-medium truncate">{docFile.name}</p>
-                          <p className="text-xs text-gray-400">{(docFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
-                        <button
-                          onClick={() => { setDocFile(null); setDocPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                          className="p-1.5 rounded-lg hover:bg-white/8 text-gray-500 hover:text-white transition-all"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Your document will be reviewed within 24–48 business hours. You will be notified once the review is complete.
-                </p>
+                {verifyModal && <VerifyContent />}
               </div>
-
-              <div className="px-6 pb-6 flex gap-3">
-                <button
-                  onClick={() => { setVerifyModal(null); setDocFile(null); setDocPreview(null); }}
-                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 text-sm font-medium transition-all active:scale-95"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDocSubmit}
-                  disabled={!docFile || uploading}
-                  className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {uploading ? (
-                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting…</>
-                  ) : (
-                    <><ShieldCheck className="h-4 w-4" />Submit for Review</>
-                  )}
-                </button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
+      )}
     </>
   );
 }

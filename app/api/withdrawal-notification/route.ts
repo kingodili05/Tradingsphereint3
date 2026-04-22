@@ -4,6 +4,7 @@ import {
   sendEmail,
   withdrawalApprovedEmailHtml,
   withdrawalRejectedEmailHtml,
+  withdrawalReceivedEmailHtml,
 } from '@/lib/email'
 
 const supabaseAdmin = createClient(
@@ -19,34 +20,34 @@ export async function POST(req: NextRequest) {
     }
 
     const token = authHeader.slice(7)
-
-    // Verify the caller is an authenticated admin
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: callerProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (!callerProfile?.is_admin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     const body = await req.json()
     const { withdrawalId, status } = body
 
-    if (!withdrawalId || !['completed', 'failed'].includes(status)) {
+    if (!withdrawalId || !['submitted', 'completed', 'failed'].includes(status)) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
     }
 
-    // Fetch withdrawal + user profile
+    // For admin actions (completed/failed), verify caller is admin
+    if (status !== 'submitted') {
+      const { data: callerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+
+      if (!callerProfile?.is_admin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+
     const { data: withdrawal, error: wErr } = await supabaseAdmin
       .from('withdrawals')
-      .select('*, profiles!withdrawals_user_id_fkey(first_name, email)')
+      .select('*, profiles!withdrawals_user_id_fkey(full_name, first_name, email)')
       .eq('id', withdrawalId)
       .single()
 
@@ -55,14 +56,25 @@ export async function POST(req: NextRequest) {
     }
 
     const profile = (withdrawal as any).profiles
-    const name = profile?.first_name || 'Valued Client'
+    const name = profile?.full_name || profile?.first_name || 'Valued Client'
     const email = profile?.email
 
     if (!email) {
       return NextResponse.json({ error: 'User email not found' }, { status: 404 })
     }
 
-    if (status === 'completed') {
+    if (status === 'submitted') {
+      await sendEmail({
+        to: email,
+        subject: 'Withdrawal Request Received — TradingSphereIntl',
+        html: withdrawalReceivedEmailHtml({
+          name,
+          amount: withdrawal.amount,
+          currency: withdrawal.currency,
+          method: withdrawal.withdrawal_method,
+        }),
+      })
+    } else if (status === 'completed') {
       await sendEmail({
         to: email,
         subject: 'Your withdrawal has been processed — TradingSphereIntl',

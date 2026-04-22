@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { RealTimeTradingInterface } from '@/components/trading/real-time-trading-interface';
 import { OpenOrders } from '@/components/trading/open-orders';
 import { TradeHistory } from '@/components/trading/trade-history';
+import { SignalEntry } from '@/components/dashboard/signal-entry';
 
 export default function TradingPage() {
   return (
@@ -17,7 +18,9 @@ export default function TradingPage() {
         </div>
         
         <RealTimeTradingInterface />
-        
+
+        <SignalEntry />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <OpenOrders />
           <TradeHistory />

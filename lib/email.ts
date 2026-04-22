@@ -249,6 +249,191 @@ export function withdrawalApprovedEmailHtml(data: {
   `)
 }
 
+export function depositReceivedEmailHtml(data: {
+  name: string
+  amount: number
+  currency: string
+  method: string
+}) {
+  const formattedAmount = data.currency === 'USD'
+    ? `$${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    : `${data.amount} ${data.currency}`
+
+  return baseLayout(`
+    <h2 style="margin:0 0 8px;color:#1a3c8f;font-size:22px;">Deposit Request Received 📥</h2>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">We've received your deposit request and it's being reviewed.</p>
+
+    <p style="margin:0 0 20px;color:#444;font-size:15px;line-height:1.7;">
+      Hi <strong>${data.name}</strong>,<br/><br/>
+      Your deposit request has been <strong>successfully submitted</strong> and is currently under review by our finance team.
+    </p>
+
+    <div style="background:#f0f7ff;border:1px solid #d0e4ff;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:8px;">Amount</td>
+          <td style="text-align:right;font-size:22px;font-weight:700;color:#1a3c8f;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:8px;">Currency</td>
+          <td style="text-align:right;color:#333;font-size:14px;">${data.currency}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;">Payment Method</td>
+          <td style="text-align:right;color:#333;font-size:14px;text-transform:capitalize;">${data.method.replace(/_/g, ' ')}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:#fff8e6;border:1px solid #f0c040;border-radius:8px;padding:16px;margin-bottom:24px;">
+      <p style="margin:0;color:#92620a;font-size:13px;">
+        ⏳ Your deposit is being processed. You will receive another email once it has been approved. This typically takes <strong>1–24 hours</strong>.
+      </p>
+    </div>
+
+    <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
+      View Dashboard
+    </a>
+
+    <p style="margin:24px 0 0;color:#888;font-size:13px;">
+      Questions? Contact <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>
+    </p>
+  `)
+}
+
+export function depositApprovedEmailHtml(data: {
+  name: string
+  amount: number
+  currency: string
+  method: string
+}) {
+  const formattedAmount = data.currency === 'USD'
+    ? `$${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    : `${data.amount} ${data.currency}`
+
+  return baseLayout(`
+    <h2 style="margin:0 0 8px;color:#16a34a;font-size:22px;">Deposit Approved ✅</h2>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">Your deposit has been credited to your account.</p>
+
+    <p style="margin:0 0 20px;color:#444;font-size:15px;line-height:1.7;">
+      Hi <strong>${data.name}</strong>,<br/><br/>
+      Great news! Your deposit of <strong>${formattedAmount}</strong> has been <strong>approved and credited</strong> to your trading account.
+    </p>
+
+    <div style="background:#f0fff4;border:1px solid #c3f0d0;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:8px;">Amount Credited</td>
+          <td style="text-align:right;font-size:22px;font-weight:700;color:#16a34a;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;">Payment Method</td>
+          <td style="text-align:right;color:#333;font-size:14px;text-transform:capitalize;">${data.method.replace(/_/g, ' ')}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin:0 0 24px;color:#444;font-size:14px;line-height:1.7;">
+      Your funds are now available in your account. You can start trading immediately.
+    </p>
+
+    <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
+      Start Trading →
+    </a>
+
+    <p style="margin:24px 0 0;color:#888;font-size:13px;">
+      Questions? Contact <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>
+    </p>
+  `)
+}
+
+export function depositRejectedEmailHtml(data: {
+  name: string
+  amount: number
+  currency: string
+  reason?: string
+}) {
+  const formattedAmount = data.currency === 'USD'
+    ? `$${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    : `${data.amount} ${data.currency}`
+
+  return baseLayout(`
+    <h2 style="margin:0 0 8px;color:#dc2626;font-size:22px;">Deposit Request Update</h2>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">An update regarding your recent deposit request.</p>
+
+    <p style="margin:0 0 20px;color:#444;font-size:15px;line-height:1.7;">
+      Hi <strong>${data.name}</strong>,<br/><br/>
+      We were unable to process your deposit request for <strong>${formattedAmount}</strong> at this time.
+    </p>
+
+    ${data.reason ? `
+    <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;color:#dc2626;font-size:13px;font-weight:600;">Reason:</p>
+      <p style="margin:0;color:#555;font-size:14px;">${data.reason}</p>
+    </div>` : ''}
+
+    <p style="margin:0 0 24px;color:#444;font-size:14px;line-height:1.7;">
+      Please contact our support team to resolve this or to try again with a different payment method.
+    </p>
+
+    <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
+      View Dashboard
+    </a>
+
+    <p style="margin:24px 0 0;color:#888;font-size:13px;">
+      Contact support: <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> | <a href="tel:+19132823212" style="color:#1a3c8f;">+1-913-282-3212</a>
+    </p>
+  `)
+}
+
+export function withdrawalReceivedEmailHtml(data: {
+  name: string
+  amount: number
+  currency: string
+  method: string
+}) {
+  const formattedAmount = data.currency === 'USD'
+    ? `$${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    : `${data.amount} ${data.currency}`
+
+  return baseLayout(`
+    <h2 style="margin:0 0 8px;color:#1a3c8f;font-size:22px;">Withdrawal Request Received 📤</h2>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">We've received your withdrawal request and it's being reviewed.</p>
+
+    <p style="margin:0 0 20px;color:#444;font-size:15px;line-height:1.7;">
+      Hi <strong>${data.name}</strong>,<br/><br/>
+      Your withdrawal request has been <strong>successfully submitted</strong> and is currently under review by our finance team.
+    </p>
+
+    <div style="background:#f0f7ff;border:1px solid #d0e4ff;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:8px;">Amount Requested</td>
+          <td style="text-align:right;font-size:22px;font-weight:700;color:#1a3c8f;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;">Withdrawal Method</td>
+          <td style="text-align:right;color:#333;font-size:14px;text-transform:capitalize;">${data.method.replace(/_/g, ' ')}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:#fff8e6;border:1px solid #f0c040;border-radius:8px;padding:16px;margin-bottom:24px;">
+      <p style="margin:0;color:#92620a;font-size:13px;">
+        ⏳ Your withdrawal is being reviewed. You will receive another email once it has been processed. This typically takes <strong>1–3 business days</strong>.
+      </p>
+    </div>
+
+    <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
+      View Dashboard
+    </a>
+
+    <p style="margin:24px 0 0;color:#888;font-size:13px;">
+      Questions? Contact <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>
+    </p>
+  `)
+}
+
 export function withdrawalRejectedEmailHtml(data: {
   name: string
   amount: number

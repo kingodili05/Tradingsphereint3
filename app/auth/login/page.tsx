@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { signIn } from '@/lib/supabase-client';
+import { signIn, supabase } from '@/lib/supabase-client';
 import { TrendingUp } from 'lucide-react';
 
 export default function LoginPage() {
@@ -28,16 +28,31 @@ export default function LoginPage() {
     try {
       console.log('Attempting login for:', formData.email);
       const { data, error } = await signIn(formData.email, formData.password);
-      
+
       if (error) {
-        console.error('Login error:', error);
         toast.error(error.message);
-      } else {
-        console.log('Login successful:', data);
+      } else if (data?.user && supabase) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('is_admin, account_status')
+          .eq('id', data.user.id)
+          .single();
+
+        const status = profileData?.account_status;
+        if (status === 'locked') {
+          await supabase.auth.signOut();
+          toast.error('Your account has been locked. Please contact support.');
+          return;
+        }
+        if (status === 'suspended') {
+          await supabase.auth.signOut();
+          toast.error('Your account has been suspended. Please contact support.');
+          return;
+        }
+
         toast.success('Login successful!');
-        // Add a small delay to ensure auth state is updated
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(profileData?.is_admin ? '/admin' : '/dashboard');
         }, 100);
       }
     } catch (error) {

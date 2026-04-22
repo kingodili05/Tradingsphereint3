@@ -75,6 +75,18 @@ export function useUserActions() {
     }
   };
 
+  const sendNotification = async (endpoint: string, body: object) => {
+    try {
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session) return;
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify(body),
+      });
+    } catch {}
+  };
+
   // Deposit request
   const requestDeposit = async (userId: string, depositData: {
     amount: number;
@@ -82,10 +94,10 @@ export function useUserActions() {
     payment_method: string;
   }) => {
     if (!supabase) return { success: false };
-    
+
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('deposits')
         .insert({
           user_id: userId,
@@ -93,10 +105,16 @@ export function useUserActions() {
           currency: depositData.currency,
           payment_method: depositData.payment_method,
           status: 'pending',
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
-      
+
+      if (data?.id) {
+        sendNotification('/api/deposit-notification', { depositId: data.id, event: 'submitted' });
+      }
+
       toast.success('Deposit request submitted successfully');
       return { success: true };
     } catch (error: any) {
@@ -132,7 +150,7 @@ export function useUserActions() {
         return { success: false };
       }
 
-      const { error } = await supabase
+      const { data: wData, error } = await supabase
         .from('withdrawals')
         .insert({
           user_id: userId,
@@ -142,10 +160,16 @@ export function useUserActions() {
           destination_address: withdrawalData.destination_address,
           bank_details: withdrawalData.bank_details,
           status: 'pending',
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
-      
+
+      if (wData?.id) {
+        sendNotification('/api/withdrawal-notification', { withdrawalId: wData.id, status: 'submitted' });
+      }
+
       toast.success('Withdrawal request submitted successfully');
       return { success: true };
     } catch (error: any) {

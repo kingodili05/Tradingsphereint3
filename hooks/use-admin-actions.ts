@@ -62,23 +62,48 @@ export function useAdminActions() {
 
   const unlockAccount = async (userId: string) => {
     if (!supabase) return { success: false };
-    
+
     setLoading(true);
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ 
+        .update({
           account_status: 'active',
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', userId);
 
       if (error) throw error;
-      
+
       toast.success('Account unlocked successfully');
       return { success: true };
     } catch (error: any) {
       toast.error('Failed to unlock account: ' + error.message);
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const suspendAccount = async (userId: string) => {
+    if (!supabase) return { success: false };
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          account_status: 'suspended',
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success('Account suspended successfully');
+      return { success: true };
+    } catch (error: any) {
+      toast.error('Failed to suspend account: ' + error.message);
       return { success: false };
     } finally {
       setLoading(false);
@@ -349,6 +374,8 @@ export function useAdminActions() {
           });
       }
 
+      sendDepositNotification(depositId, 'approved');
+
       toast.success(`Deposit of ${(deposit as any).currency} ${(deposit as any).amount} approved`);
       return { success: true };
     } catch (error: any) {
@@ -361,19 +388,21 @@ export function useAdminActions() {
 
   const rejectDeposit = async (depositId: string) => {
     if (!supabase) return { success: false };
-    
+
     setLoading(true);
     try {
       const { error } = await supabase
         .from('deposits')
-        .update({ 
+        .update({
           status: 'failed',
           processed_at: new Date().toISOString()
         })
         .eq('id', depositId);
 
       if (error) throw error;
-      
+
+      sendDepositNotification(depositId, 'rejected');
+
       toast.success('Deposit rejected');
       return { success: true };
     } catch (error: any) {
@@ -381,6 +410,20 @@ export function useAdminActions() {
       return { success: false };
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendDepositNotification = async (depositId: string, event: 'approved' | 'rejected') => {
+    try {
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session) return;
+      await fetch('/api/deposit-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ depositId, event }),
+      });
+    } catch (err) {
+      console.error('[Deposit notification] Failed:', err);
     }
   };
 
@@ -711,6 +754,7 @@ export function useAdminActions() {
     approveUser,
     lockAccount,
     unlockAccount,
+    suspendAccount,
     setTradeResult,
     updateBalance,
     adjustUserBalance,

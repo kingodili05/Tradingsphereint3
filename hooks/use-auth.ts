@@ -196,12 +196,17 @@ export function useAuth() {
     }
   };
 
+  const accountStatus: string = (profile as any)?.account_status || 'active';
+  const isBlocked = accountStatus === 'locked' || accountStatus === 'suspended';
+
   return {
     user,
     profile,
     loading,
     isAuthenticated,
     isAdmin,
+    accountStatus,
+    isBlocked,
     refreshProfile,
     clearCache,
     initialLoaded,

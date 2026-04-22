@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase-client';
 import { Profile, Package as PackageType } from '@/lib/database.types';
-import { Search, MoreHorizontal, CheckCircle, XCircle, Lock, Package } from 'lucide-react';
+import { Search, MoreHorizontal, CheckCircle, XCircle, Lock, LockOpen, Package, Ban, ShieldCheck, ShieldOff, TrendingUp, TrendingDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,26 +17,39 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useAdminActions } from '@/hooks/use-admin-actions';
 import { useAuth } from '@/hooks/use-auth';
 
+type AccountStatus = 'active' | 'locked' | 'suspended' | 'pending' | string;
+
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  active:    { label: 'Active',    color: 'bg-green-500/15 text-green-400 border-green-500/30' },
+  locked:    { label: 'Locked',    color: 'bg-red-500/15 text-red-400 border-red-500/30' },
+  suspended: { label: 'Suspended', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  pending:   { label: 'Pending',   color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+};
+
 export function AdminUserManagement() {
   const { user: adminUser } = useAuth();
   const {
     approveUser,
     lockAccount,
+    unlockAccount,
+    suspendAccount,
     toggleVerification,
     upgradeUserPackage,
     adjustUserBalance,
-    loading: actionLoading
+    loading: actionLoading,
   } = useAdminActions();
 
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | AccountStatus>('all');
 
   // Package Dialog
   const [packageDialog, setPackageDialog] = useState(false);
@@ -52,10 +65,10 @@ export function AdminUserManagement() {
   const [balanceAdminNotes, setBalanceAdminNotes] = useState('');
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
-  const newBalance = currentBalance !== null ?
-    (balanceAdjustmentType === 'increase'
+  const newBalance = currentBalance !== null
+    ? balanceAdjustmentType === 'increase'
       ? currentBalance + balanceAmount
-      : currentBalance - balanceAmount)
+      : currentBalance - balanceAmount
     : 0;
 
   const { data: packages } = useQuery<PackageType[]>({
@@ -79,25 +92,19 @@ export function AdminUserManagement() {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select(`
-        *,
-        packages (
-          id,
-          name,
-          display_name
-        )
-      `)
+      .select(`*, packages (id, name, display_name)`)
       .order('created_at', { ascending: false });
     if (data && !error) setUsers(data);
     setLoading(false);
   };
 
-  const updateUserStatus = async (userId: string, status: string) => {
+  const handleStatusAction = async (action: string, userId: string) => {
     let result;
-    switch (status) {
-      case 'active': result = await approveUser(userId); break;
-      case 'locked': result = await lockAccount(userId); break;
-      case 'suspended': result = await lockAccount(userId); break;
+    switch (action) {
+      case 'activate':  result = await approveUser(userId); break;
+      case 'lock':      result = await lockAccount(userId); break;
+      case 'unlock':    result = await unlockAccount(userId); break;
+      case 'suspend':   result = await suspendAccount(userId); break;
       default: return;
     }
     if (result.success) await fetchUsers();
@@ -124,7 +131,6 @@ export function AdminUserManagement() {
     }
   };
 
-  // --- BALANCE MODAL LOGIC ---
   const openBalanceDialog = async (user: Profile, type: 'increase' | 'decrease') => {
     setSelectedUser(user);
     setBalanceAdjustmentType(type);
@@ -186,73 +192,193 @@ export function AdminUserManagement() {
     await fetchUsers();
   };
 
-  const filteredUsers = users.filter(user =>
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(user => {
+    const matchesSearch =
+      user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || (user as any).account_status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const statusCounts = users.reduce<Record<string, number>>((acc, u) => {
+    const s = (u as any).account_status || 'pending';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+
+  if (loading) return (
+    <Card>
+      <CardHeader><CardTitle>User Management</CardTitle></CardHeader>
+      <CardContent>Loading users...</CardContent>
+    </Card>
   );
 
-  if (loading) return <Card><CardHeader><CardTitle>User Management</CardTitle></CardHeader><CardContent>Loading...</CardContent></Card>;
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Management</CardTitle>
-        <Input placeholder="Search users..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {filteredUsers.map(user => (
-            <div key={user.id} className="border rounded-lg p-4 flex justify-between items-center">
-              <div className="flex items-center space-x-3">
-                <Avatar>
-                  <AvatarImage src={user.profile_image_url || "/placeholder-avatar.png"} />
-                  <AvatarFallback>{user.first_name[0]}{user.last_name[0]}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-medium">{user.full_name}</div>
-                  <div className="text-sm text-muted-foreground">{user.email}</div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => updateUserStatus(user.id, 'active')}>
-                      <CheckCircle className="h-4 w-4 mr-2" /> Activate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openPackageDialog(user)}>
-                      <Package className="h-4 w-4 mr-2" /> Upgrade Package
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openBalanceDialog(user, 'increase')}>
-                      <CheckCircle className="h-4 w-4 mr-2" /> Top Up Balance
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openBalanceDialog(user, 'decrease')}>
-                      <XCircle className="h-4 w-4 mr-2" /> Reduce Balance
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateUserStatus(user.id, 'suspended')}>
-                      <Lock className="h-4 w-4 mr-2" /> Suspend
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateUserStatus(user.id, 'locked')}>
-                      <XCircle className="h-4 w-4 mr-2" /> Lock
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+    <div className="space-y-4">
+      {/* Status filter tabs */}
+      <div className="flex flex-wrap gap-2">
+        {(['all', 'active', 'pending', 'suspended', 'locked'] as const).map(s => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              statusFilter === s
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-transparent border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+            }`}
+          >
+            {s === 'all' ? 'All' : STATUS_CONFIG[s]?.label ?? s}
+            <span className="ml-1.5 opacity-70">
+              {s === 'all' ? users.length : (statusCounts[s] || 0)}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-8"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredUsers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No users found</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredUsers.map(user => {
+                const status: AccountStatus = (user as any).account_status || 'pending';
+                const statusCfg = STATUS_CONFIG[status] ?? { label: status, color: 'bg-gray-500/15 text-gray-400 border-gray-500/30' };
+                const isActive = status === 'active';
+                const isLocked = status === 'locked';
+                const isSuspended = status === 'suspended';
+                const isRestricted = isLocked || isSuspended;
+
+                return (
+                  <div key={user.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarImage src={user.profile_image_url || '/placeholder-avatar.png'} />
+                          <AvatarFallback>{user.first_name?.[0]}{user.last_name?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{user.full_name}</div>
+                          <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusCfg.color}`}>
+                              {statusCfg.label}
+                            </span>
+                            {(user as any).is_email_verified && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-green-500/10 text-green-600 border-green-500/20">
+                                Email ✓
+                              </span>
+                            )}
+                            {(user as any).is_identity_verified && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-500/10 text-purple-600 border-purple-500/20">
+                                ID ✓
+                              </span>
+                            )}
+                            {(user as any).is_residency_verified && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-500/10 text-purple-600 border-purple-500/20">
+                                Address ✓
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          {/* Account status actions */}
+                          {!isActive && (
+                            <DropdownMenuItem onClick={() => handleStatusAction('activate', user.id)}>
+                              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                              Activate Account
+                            </DropdownMenuItem>
+                          )}
+                          {isRestricted && (
+                            <DropdownMenuItem onClick={() => handleStatusAction('unlock', user.id)}>
+                              <LockOpen className="h-4 w-4 mr-2 text-blue-600" />
+                              Unlock Account
+                            </DropdownMenuItem>
+                          )}
+                          {!isLocked && (
+                            <DropdownMenuItem onClick={() => handleStatusAction('lock', user.id)}>
+                              <Lock className="h-4 w-4 mr-2 text-red-600" />
+                              Lock Account
+                            </DropdownMenuItem>
+                          )}
+                          {!isSuspended && (
+                            <DropdownMenuItem onClick={() => handleStatusAction('suspend', user.id)}>
+                              <Ban className="h-4 w-4 mr-2 text-amber-600" />
+                              Suspend Account
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuSeparator />
+
+                          {/* Verification toggles */}
+                          <DropdownMenuItem onClick={() => handleToggleVerification(user.id, 'is_identity_verified', !!(user as any).is_identity_verified)}>
+                            {(user as any).is_identity_verified
+                              ? <><ShieldOff className="h-4 w-4 mr-2 text-orange-500" /> Revoke ID Verification</>
+                              : <><ShieldCheck className="h-4 w-4 mr-2 text-green-600" /> Verify Identity (ID)</>
+                            }
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleVerification(user.id, 'is_residency_verified', !!(user as any).is_residency_verified)}>
+                            {(user as any).is_residency_verified
+                              ? <><ShieldOff className="h-4 w-4 mr-2 text-orange-500" /> Revoke Address Verification</>
+                              : <><ShieldCheck className="h-4 w-4 mr-2 text-green-600" /> Verify Address</>
+                            }
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
+
+                          {/* Balance & Package */}
+                          <DropdownMenuItem onClick={() => openBalanceDialog(user, 'increase')}>
+                            <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
+                            Top Up Balance
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openBalanceDialog(user, 'decrease')}>
+                            <TrendingDown className="h-4 w-4 mr-2 text-red-500" />
+                            Reduce Balance
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openPackageDialog(user)}>
+                            <Package className="h-4 w-4 mr-2" />
+                            Change Package
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      </CardContent>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Package Dialog */}
       <Dialog open={packageDialog} onOpenChange={setPackageDialog}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Upgrade/Downgrade Package</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Change Package</DialogTitle></DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
+              <div>
+                <Label>User</Label>
+                <div className="text-sm text-muted-foreground">{selectedUser.full_name}</div>
+              </div>
               <div>
                 <Label>Current Package</Label>
                 <div>{(selectedUser as any)?.packages?.display_name || 'STARTER'}</div>
@@ -265,7 +391,7 @@ export function AdminUserManagement() {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <Button onClick={handleUpgradePackage} disabled={actionLoading || !selectedPackageId}>Update</Button>
                 <Button variant="outline" onClick={() => setPackageDialog(false)}>Cancel</Button>
               </div>
@@ -279,13 +405,12 @@ export function AdminUserManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{balanceAdjustmentType === 'increase' ? 'Top Up Balance' : 'Reduce Balance'}</DialogTitle>
-            
-            </DialogHeader>
+          </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div>
                 <Label>User</Label>
-                <div>{selectedUser.full_name} ({selectedUser.email})</div>
+                <div className="text-sm text-muted-foreground">{selectedUser.full_name} ({selectedUser.email})</div>
               </div>
               <div>
                 <Label>Amount</Label>
@@ -313,23 +438,27 @@ export function AdminUserManagement() {
                 </Select>
               </div>
               <div>
-                <Label>Admin Notes</Label>
+                <Label>Admin Notes (required)</Label>
                 <Input value={balanceAdminNotes} onChange={(e) => setBalanceAdminNotes(e.target.value)} placeholder="Reason for adjustment" />
               </div>
               {currentBalance !== null && (
-                <div>
-                  <div>Current Balance: {currentBalance.toLocaleString()}</div>
-                  <div className={`${newBalance < 0 ? 'text-red-600' : 'text-green-700'}`}>New Balance: {newBalance.toLocaleString()}</div>
+                <div className="rounded-lg bg-muted p-3 space-y-1 text-sm">
+                  <div>Current: <span className="font-medium">{currentBalance.toLocaleString()} {balanceCurrency}</span></div>
+                  <div className={newBalance < 0 ? 'text-red-600' : 'text-green-700'}>
+                    New: <span className="font-medium">{newBalance.toLocaleString()} {balanceCurrency}</span>
+                  </div>
                 </div>
               )}
-              <div className="flex space-x-2">
-                <Button onClick={handleBalanceAdjustment} disabled={balanceAmount <= 0 || newBalance < 0}>Confirm</Button>
+              <div className="flex gap-2">
+                <Button onClick={handleBalanceAdjustment} disabled={actionLoading || balanceAmount <= 0 || newBalance < 0}>
+                  Confirm
+                </Button>
                 <Button variant="outline" onClick={() => setBalanceDialogOpen(false)}>Cancel</Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }
