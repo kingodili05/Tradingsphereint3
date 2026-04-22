@@ -6,10 +6,12 @@ import {
   Bell, Mail, User,
   ArrowUpFromLine, ArrowDownToLine, CheckCircle, XCircle,
   TrendingUp, Menu, X, Upload, FileText, Image as ImageIcon,
-  ShieldCheck,
+  ShieldCheck, Home, DollarSign, ShoppingCart, Package, HelpCircle, BarChart3, LogOut,
 } from 'lucide-react';
 import { useUserActions } from '@/hooks/use-user-actions';
 import { useAuth } from '@/hooks/use-auth';
+import { signOut } from '@/lib/supabase-client';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Drawer } from 'vaul';
@@ -33,6 +35,7 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
   const { user } = useAuth();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showMessagesDropdown, setShowMessagesDropdown] = useState(false);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [verifyModal, setVerifyModal] = useState<VerifyModalType>(null);
   const [docFile, setDocFile] = useState<File | null>(null);
@@ -66,7 +69,32 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const router = useRouter();
+  const pathname = usePathname();
   const closeProfilePanel = () => setShowProfileDropdown(false);
+
+  const navItems = [
+    { icon: Home, label: 'Dashboard', href: '/dashboard' },
+    { icon: BarChart3, label: 'Trading', href: '/trading' },
+    { icon: DollarSign, label: 'Finance', href: '/user-finance' },
+    { icon: User, label: 'Profile', href: '/user-profile' },
+    { icon: Mail, label: 'Messages', href: '/user-messages', badge: unreadCount },
+    { icon: ShoppingCart, label: 'Markets', href: '/markets' },
+    { icon: Package, label: 'Packages', href: '/user-packages' },
+    { icon: HelpCircle, label: 'Help & Support', href: '/user-support' },
+  ];
+
+  const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href));
+
+  const handleNavLogout = async () => {
+    setShowNavDrawer(false);
+    try {
+      await signOut();
+      router.push('/');
+    } catch {
+      router.push('/');
+    }
+  };
 
   const handleVerifyEmail = async () => {
     closeProfilePanel();
@@ -242,7 +270,10 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
         style={{ backgroundColor: 'rgba(29,35,48,0.97)', backdropFilter: 'blur(12px)' }}
       >
         <div className="flex items-center justify-between">
-          <button className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/6 transition-all active:scale-95">
+          <button
+            onClick={() => setShowNavDrawer(true)}
+            className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/6 transition-all active:scale-95"
+          >
             <Menu className="h-5 w-5" />
           </button>
 
@@ -355,6 +386,89 @@ export function DashboardTopbar({ profile, messages }: DashboardTopbarProps) {
               </div>
               <Drawer.Title className="sr-only">Account Panel</Drawer.Title>
               <ProfilePanel onClose={closeProfilePanel} />
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+
+      {/* ── Navigation drawer ── */}
+      <Drawer.Root open={showNavDrawer} onOpenChange={setShowNavDrawer} direction="left">
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/60 z-40" style={{ backdropFilter: 'blur(4px)' }} />
+          <Drawer.Content
+            className="fixed top-0 left-0 bottom-0 z-50 flex flex-col border-r border-white/10 w-72"
+            style={{ backgroundColor: '#151c28' }}
+          >
+            <Drawer.Title className="sr-only">Navigation Menu</Drawer.Title>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
+                  <TrendingUp className="h-5 w-5 text-black" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-sm leading-tight">TradingSphereIntl</p>
+                  <p className="text-gray-500 text-[10px]">Investment Platform</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowNavDrawer(false)}
+                className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/6 transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* User info */}
+            <div className="px-5 py-4 border-b border-white/8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-600 flex items-center justify-center ring-1 ring-green-500/30 shrink-0">
+                  <span className="text-white font-bold text-sm">{initials}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{profile?.full_name || 'User'}</p>
+                  <p className="text-gray-500 text-xs truncate">{profile?.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Nav items */}
+            <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+              {navItems.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => { setShowNavDrawer(false); router.push(item.href); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-98 relative ${
+                      active
+                        ? 'bg-green-500/15 text-green-400'
+                        : 'text-white/60 hover:bg-white/6 hover:text-white'
+                    }`}
+                  >
+                    {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-green-500 rounded-r-full" />}
+                    <item.icon className={`h-4.5 w-4.5 shrink-0 ${active ? 'text-green-400' : ''}`} style={{ width: '18px', height: '18px' }} />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {item.badge && item.badge > 0 && (
+                      <span className="bg-red-500 text-white text-[9px] rounded-full h-4 w-4 flex items-center justify-center font-bold shrink-0 animate-pulse">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Logout */}
+            <div className="px-3 pb-6 pt-2 border-t border-white/8">
+              <button
+                onClick={handleNavLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:bg-red-500/10 hover:text-red-400 transition-all duration-150 active:scale-95 group"
+              >
+                <LogOut className="h-4 w-4 shrink-0 group-hover:rotate-12 transition-transform duration-200" />
+                Sign Out
+              </button>
             </div>
           </Drawer.Content>
         </Drawer.Portal>
