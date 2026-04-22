@@ -20,6 +20,11 @@ const nextConfig = {
     if (dev) {
       config.cache = false;
     }
+    // Stub out @react-email/render so resend (if cached) doesn't break the build
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@react-email/render': false,
+    };
     return config;
   },
 };
