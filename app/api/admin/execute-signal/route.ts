@@ -63,9 +63,11 @@ export async function POST(req: NextRequest) {
     const pnl = p.investment_amount * multiplier;
 
     // Settle participant
+    const finalBalance = (p.entry_balance ?? 0) + pnl;
     await admin.from('signal_participants').update({
       profit_loss_amount: pnl,
       profit_loss_percentage: multiplier * 100,
+      final_balance: finalBalance,
       settled_at: settled,
     }).eq('id', p.id);
 

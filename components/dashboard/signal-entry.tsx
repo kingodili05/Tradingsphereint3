@@ -93,6 +93,7 @@ export function SignalEntry() {
         signal_id: signal.id,
         user_id: user.id,
         investment_amount: investAmount,
+        entry_balance: bal.balance,
       });
       if (error) throw error;
 

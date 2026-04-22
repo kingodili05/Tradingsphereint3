@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     signal_id: signal.id,
     user_id: userId,
     investment_amount: investmentAmount,
+    entry_balance: bal.balance,
   });
 
   if (partErr) {
