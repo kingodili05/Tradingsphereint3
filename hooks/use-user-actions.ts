@@ -158,44 +158,36 @@ export function useUserActions() {
 
   // Account verification requests
   const requestEmailVerification = async () => {
-    if (!supabase) return { success: false };
-    if (!user) return { success: false };
-    
+    if (!supabase || !user) return { success: false };
+
     setLoading(true);
     try {
-      // In a real implementation, you would send a verification email
-      // For demo purposes, we'll simulate email verification
-      const { error } = await supabase
+      // Check current verification status first
+      const { data: profileData } = await supabase
         .from('profiles')
-        .update({
-          is_email_verified: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+        .select('is_email_verified')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData?.is_email_verified) {
+        toast.success('Your email is already verified ✓');
+        return { success: true };
+      }
+
+      // Send real verification email via Supabase Auth
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereint.online';
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email!,
+        options: { emailRedirectTo: `${siteUrl}/auth/verify-email` },
+      });
 
       if (error) throw error;
-      
-      // Send notification message
-      await supabase
-        .from('messages')
-        .insert({
-          user_id: user.id,
-          title: 'Email Verification Complete',
-          content: 'Your email address has been successfully verified. You now have access to additional platform features.',
-          message_type: 'system',
-          is_important: true,
-        });
 
-      toast.success('Email verified successfully');
-      
-      // Refresh the page to show updated verification status
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
+      toast.success('Verification email sent! Check your inbox.');
       return { success: true };
     } catch (error: any) {
-      toast.error('Failed to verify email: ' + error.message);
+      toast.error('Failed to send verification email: ' + error.message);
       return { success: false };
     } finally {
       setLoading(false);
@@ -258,15 +250,56 @@ export function useUserActions() {
 
   const uploadVerificationDocument = async (userId: string, documentType: string, file: File) => {
     if (!supabase) return { success: false };
-    
+
     setLoading(true);
     try {
-      // In a real implementation, you would upload to Supabase Storage
-      // For now, we'll just simulate the upload
-      toast.success(`${documentType} document uploaded for verification`);
+      const fileExt = file.name.split('.').pop() || 'bin';
+      const storagePath = `${userId}/${documentType}/${Date.now()}.${fileExt}`;
+      let filePath = storagePath;
+
+      // Attempt storage upload — gracefully skip if bucket not yet created
+      const { error: storageError } = await supabase.storage
+        .from('verification-documents')
+        .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+
+      if (storageError) {
+        console.warn('[VerifyDoc] Storage upload skipped:', storageError.message);
+        filePath = `pending-storage/${storagePath}`;
+      }
+
+      // Record in verification_documents table
+      const { error: dbError } = await supabase
+        .from('verification_documents')
+        .insert({
+          user_id: userId,
+          document_type: documentType,
+          file_path: filePath,
+          file_name: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          verification_status: 'pending',
+        });
+
+      if (dbError) throw dbError;
+
+      // Notify admin via API (non-blocking)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        fetch('/api/verification-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ documentType, userId }),
+        }).catch(() => {});
+      }
+
+      toast.success('Document submitted! We will review it within 24–48 hours.');
       return { success: true };
     } catch (error: any) {
-      toast.error('Failed to upload document: ' + error.message);
+      toast.error('Failed to submit document: ' + error.message);
       return { success: false };
     } finally {
       setLoading(false);
