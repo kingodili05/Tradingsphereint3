@@ -170,7 +170,7 @@ export function TradeSignalManagement() {
             const remaining = Math.max(0, new Date(signal.execution_time).getTime() - Date.now());
             updated[signal.id] = remaining;
             if (remaining === 0 && (prev[signal.id] ?? 1) > 0) {
-              executeSignal(signal.id, signal.forced_outcome || null);
+              executeSignal(signal.id, signal.forced_outcome ?? null);
             }
           }
         });
@@ -180,55 +180,25 @@ export function TradeSignalManagement() {
     return () => clearInterval(interval);
   }, [signals]);
 
+  const getSession = async () => {
+    if (!supabase) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  };
+
   const executeSignal = async (signalId: string, forceOutcome: 'profit' | 'loss' | null) => {
-    if (!supabase || !user) return;
+    if (!user) return;
+    const token = await getSession();
+    if (!token) return;
     try {
-      const { data: signal } = await supabase
-        .from('admin_trade_signals')
-        .select('*')
-        .eq('id', signalId)
-        .eq('status', 'active')
-        .single();
-      if (!signal) return;
-
-      const { data: participants } = await supabase
-        .from('signal_participants')
-        .select('*')
-        .eq('signal_id', signalId)
-        .is('settled_at', null);
-
-      const outcome: 'profit' | 'loss' = forceOutcome ?? (Math.random() < signal.win_probability ? 'profit' : 'loss');
-      const multiplier = outcome === 'profit' ? signal.take_profit_percentage / 100 : -(signal.stop_loss_percentage / 100);
-
-      if (participants?.length) {
-        for (const p of participants) {
-          const pnl = p.investment_amount * multiplier;
-          await supabase.from('signal_participants').update({
-            profit_loss_amount: pnl,
-            profit_loss_percentage: multiplier * 100,
-            settled_at: new Date().toISOString(),
-          }).eq('id', p.id);
-
-          const { data: bal } = await supabase.from('balances').select('*').eq('user_id', p.user_id).eq('currency', 'USD').single();
-          if (bal) {
-            await supabase.from('balances').update({
-              balance: bal.balance + pnl,
-              available_balance: bal.available_balance + p.investment_amount + pnl,
-              locked_balance: Math.max(0, bal.locked_balance - p.investment_amount),
-              updated_at: new Date().toISOString(),
-            }).eq('user_id', p.user_id).eq('currency', 'USD');
-          }
-        }
-      }
-
-      await supabase.from('admin_trade_signals').update({
-        status: 'executed',
-        execution_result: outcome,
-        executed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq('id', signalId);
-
-      toast.success(`Signal executed: ${outcome} — ${participants?.length || 0} participants settled`);
+      const res = await fetch('/api/admin/execute-signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ signalId, forceOutcome }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+      toast.success(`Signal executed: ${result.outcome} — ${result.participantsSettled} participant(s) settled`);
       await fetchSignals();
     } catch (err: any) {
       toast.error('Failed to execute signal: ' + err.message);
@@ -284,7 +254,7 @@ export function TradeSignalManagement() {
   };
 
   const handleDirectTrade = async () => {
-    if (!supabase || !user) return;
+    if (!user) return;
     if (!directTrade.user_id || !directTrade.commodity || !directTrade.investment_amount) {
       toast.error('Please fill in all required fields');
       return;
@@ -292,47 +262,29 @@ export function TradeSignalManagement() {
     const amount = parseFloat(directTrade.investment_amount);
     if (isNaN(amount) || amount <= 0) { toast.error('Invalid investment amount'); return; }
 
+    const token = await getSession();
+    if (!token) return;
+
     setDirectTradeLoading(true);
     try {
-      // Check user balance
-      const { data: bal } = await supabase.from('balances').select('balance').eq('user_id', directTrade.user_id).eq('currency', 'USD').single();
-      if (!bal || bal.balance < amount) { toast.error('User has insufficient balance'); setDirectTradeLoading(false); return; }
-
-      // Create signal
-      const code = generateSignalCode();
-      const executionTime = new Date(Date.now() + parseInt(directTrade.timer_duration_minutes) * 60 * 1000);
-      const { data: signal, error: signalErr } = await supabase.from('admin_trade_signals').insert({
-        signal_name: `Direct Trade — ${directTrade.commodity}`,
-        signal_code: code,
-        commodity: directTrade.commodity,
-        trade_direction: directTrade.trade_direction,
-        take_profit_percentage: parseFloat(directTrade.take_profit_percentage),
-        stop_loss_percentage: parseFloat(directTrade.stop_loss_percentage),
-        timer_duration_minutes: parseInt(directTrade.timer_duration_minutes),
-        win_probability: directTrade.forced_outcome === 'profit' ? 1.0 : 0.0,
-        forced_outcome: directTrade.forced_outcome,
-        status: 'active',
-        timer_start_time: new Date().toISOString(),
-        execution_time: executionTime.toISOString(),
-        created_by: user.id,
-      }).select('id').single();
-
-      if (signalErr || !signal) throw signalErr || new Error('Failed to create signal');
-
-      // Lock user balance and add participant
-      await supabase.from('balances').update({
-        available_balance: bal.balance - amount,
-        locked_balance: amount,
-        updated_at: new Date().toISOString(),
-      }).eq('user_id', directTrade.user_id).eq('currency', 'USD');
-
-      await supabase.from('signal_participants').insert({
-        signal_id: signal.id,
-        user_id: directTrade.user_id,
-        investment_amount: amount,
+      const res = await fetch('/api/admin/direct-trade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          userId: directTrade.user_id,
+          commodity: directTrade.commodity,
+          tradeDirection: directTrade.trade_direction,
+          investmentAmount: amount,
+          takeProfitPct: parseFloat(directTrade.take_profit_percentage),
+          stopLossPct: parseFloat(directTrade.stop_loss_percentage),
+          durationMinutes: parseInt(directTrade.timer_duration_minutes),
+          forcedOutcome: directTrade.forced_outcome,
+        }),
       });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to start trade');
 
-      toast.success(`Direct trade started for user. Timer: ${directTrade.timer_duration_minutes} min. Outcome: ${directTrade.forced_outcome}`);
+      toast.success(`Direct trade started. Timer: ${directTrade.timer_duration_minutes} min. Outcome: ${directTrade.forced_outcome}`);
       setDirectTrade({ user_id: '', commodity: '', trade_direction: 'buy', investment_amount: '', take_profit_percentage: '10', stop_loss_percentage: '5', timer_duration_minutes: '30', forced_outcome: 'profit' });
       setTab('signals');
       await fetchSignals();
