@@ -1,4 +1,4 @@
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@tradingsphereint.online'
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@tradingsphereintl.online'
 export const FROM_EMAIL = process.env.RESEND_FROM || 'noreply@tradingsphereint.online'
 const SITE_NAME = 'TradingSphereIntl'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereint.online'
@@ -148,7 +148,7 @@ export function contactAcknowledgementEmailHtml(name: string) {
       Thank you for reaching out to ${SITE_NAME}. We have received your message and our support team will get back to you within <strong>24–48 business hours</strong>.
     </p>
     <p style="margin:0 0 24px;color:#444;font-size:15px;line-height:1.7;">
-      If your inquiry is urgent, please call us at <a href="tel:+19132823212" style="color:#1a3c8f;">+1-913-282-3212</a> or email <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>.
+      If your inquiry is urgent, please call us at <a href="tel:+18052627073" style="color:#1a3c8f;">+1-805-262-7073</a> or email <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>.
     </p>
     <a href="${SITE_URL}" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
       Visit Platform
@@ -194,7 +194,7 @@ export function welcomeEmailHtml(name: string) {
     </a>
 
     <p style="margin:28px 0 0;color:#888;font-size:13px;border-top:1px solid #e8edf3;padding-top:20px;">
-      Need help? Contact our support team at <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> or call <a href="tel:+19132823212" style="color:#1a3c8f;">+1-913-282-3212</a>.
+      Need help? Contact our support team at <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> or call <a href="tel:+18052627073" style="color:#1a3c8f;">+1-805-262-7073</a>.
     </p>
   `)
 }
@@ -381,7 +381,7 @@ export function depositRejectedEmailHtml(data: {
     </a>
 
     <p style="margin:24px 0 0;color:#888;font-size:13px;">
-      Contact support: <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> | <a href="tel:+19132823212" style="color:#1a3c8f;">+1-913-282-3212</a>
+      Contact support: <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> | <a href="tel:+18052627073" style="color:#1a3c8f;">+1-805-262-7073</a>
     </p>
   `)
 }
@@ -468,7 +468,7 @@ export function withdrawalRejectedEmailHtml(data: {
     </a>
 
     <p style="margin:24px 0 0;color:#888;font-size:13px;">
-      Contact support: <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> | <a href="tel:+19132823212" style="color:#1a3c8f;">+1-913-282-3212</a>
+      Contact support: <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a> | <a href="tel:+18052627073" style="color:#1a3c8f;">+1-805-262-7073</a>
     </p>
   `)
 }

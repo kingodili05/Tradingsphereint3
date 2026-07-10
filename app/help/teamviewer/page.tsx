@@ -233,7 +233,7 @@ export default function TeamViewerPage() {
                     Live Chat Support
                   </Button>
                   <Button variant="outline" className="w-full justify-start">
-                    Phone Support: +1-913-282-3212
+                    Phone Support: +1-805-262-7073
                   </Button>
                 </div>
               </div>

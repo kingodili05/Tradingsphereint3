@@ -133,7 +133,7 @@ export default function ContactPage() {
                   <Phone className="h-5 w-5 text-blue-600" />
                   <div>
                     <div className="font-medium">Phone</div>
-                    <div className="text-sm text-muted-foreground">+1-913-282-3212</div>
+                    <div className="text-sm text-muted-foreground">+1-805-262-7073</div>
                   </div>
                 </div>
                 
@@ -141,7 +141,7 @@ export default function ContactPage() {
                   <Mail className="h-5 w-5 text-blue-600" />
                   <div>
                     <div className="font-medium">Email</div>
-                    <div className="text-sm text-muted-foreground">support@tradingsphereint.online</div>
+                    <div className="text-sm text-muted-foreground">support@tradingsphereintl.online</div>
                   </div>
                 </div>
                 

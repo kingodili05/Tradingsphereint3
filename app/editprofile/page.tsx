@@ -833,7 +833,7 @@ export default function EditProfilePage() {
                                 <Input
                                   value={profile?.email || ''}
                                   disabled
-                                  placeholder="Enter Bitcoin Wallet Address (Contact support@tradingsphereint.online for help)"
+                                  placeholder="Enter Bitcoin Wallet Address (Contact support@tradingsphereintl.online for help)"
                                 />
                                 <p className="text-sm text-gray-300">
                                   This is your registered email address that will be verified.

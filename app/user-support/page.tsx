@@ -36,7 +36,7 @@ export default function UserSupportPage() {
               <Phone className="h-8 w-8 text-green-600 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Phone Support</h3>
               <p className="text-sm text-muted-foreground mb-3">Call us directly</p>
-              <Button size="sm" variant="outline" className="w-full"><a href="tel:+19132823212">Phone Support: +1-913-282-3212</a></Button>
+              <Button size="sm" variant="outline" className="w-full"><a href="tel:+18052627073">Phone Support: +1-805-262-7073</a></Button>
             </CardContent>
           </Card>
 

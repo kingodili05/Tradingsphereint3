@@ -50,22 +50,22 @@ export function AccountBlocked({ status }: AccountBlockedProps) {
         >
           <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Contact Support</p>
           <a
-            href={`mailto:support@tradingsphereint.online`}
+            href={`mailto:support@tradingsphereintl.online`}
             className="flex items-center gap-3 text-sm text-gray-300 hover:text-white transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center group-hover:bg-blue-500/25 transition-colors">
               <Mail className="h-4 w-4 text-blue-400" />
             </div>
-            support@tradingsphereint.online
+            support@tradingsphereintl.online
           </a>
           <a
-            href="tel:+19132823212"
+            href="tel:+18052627073"
             className="flex items-center gap-3 text-sm text-gray-300 hover:text-white transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center group-hover:bg-green-500/25 transition-colors">
               <Phone className="h-4 w-4 text-green-400" />
             </div>
-            +1-913-282-3212
+            +1-805-262-7073
           </a>
         </div>
 
