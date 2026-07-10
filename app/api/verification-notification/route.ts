@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const userName = profile?.full_name || user.email || 'Unknown User';
   const userEmail = profile?.email || user.email || '';
   const docLabel = documentType === 'identity' ? 'Identity (Government ID)' : 'Proof of Address';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereint.online';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereintl.online';
 
   const html = `
 <!DOCTYPE html>

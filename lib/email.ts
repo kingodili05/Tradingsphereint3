@@ -1,7 +1,7 @@
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@tradingsphereintl.online'
-export const FROM_EMAIL = process.env.RESEND_FROM || 'noreply@tradingsphereint.online'
+export const FROM_EMAIL = process.env.RESEND_FROM || 'noreply@tradingsphereintl.online'
 const SITE_NAME = 'TradingSphereIntl'
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereint.online'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereintl.online'
 
 export async function sendEmail({
   to,

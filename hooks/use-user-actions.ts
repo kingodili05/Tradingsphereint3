@@ -199,7 +199,7 @@ export function useUserActions() {
       }
 
       // Send real verification email via Supabase Auth
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereint.online';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradingsphereintl.online';
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: user.email!,
