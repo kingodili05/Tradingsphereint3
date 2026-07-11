@@ -20,40 +20,21 @@ export function TawkToWidget() {
     // Create script element
     const script = document.createElement('script');
     script.async = true;
-    script.src = 'https://embed.tawk.to/68bcb5e1f58c911925a72d90/1j4gicuud';
+    script.src = 'https://embed.tawk.to/6a523160a6558f1d451fec26/1jt8h1onu';
     script.charset = 'UTF-8';
     script.setAttribute('crossorigin', '*');
 
     // Add script to document
     document.head.appendChild(script);
 
-    // Customize Tawk.to appearance and behavior
+    // Tag the visitor with their account details when signed in
     window.Tawk_API.onLoad = function() {
-      // Customize the widget appearance and branding with user data if available
-      const attributes = {
-        name: user?.email ? user.email.split('@')[0] : 'User',
-        email: user?.email || 'user@example.com',
-      };
-      
-      window.Tawk_API.setAttributes(attributes);
-    };
-
-    // Handle chat events
-    window.Tawk_API.onChatStarted = function() {
-      console.log('Chat started');
-    };
-
-    window.Tawk_API.onChatEnded = function() {
-      console.log('Chat ended');
-    };
-    
-    // Handle widget minimization/maximization
-    window.Tawk_API.onChatMinimized = function() {
-      console.log('Chat minimized');
-    };
-    
-    window.Tawk_API.onChatMaximized = function() {
-      console.log('Chat maximized');
+      if (user?.email) {
+        window.Tawk_API.setAttributes({
+          name: user.email.split('@')[0],
+          email: user.email,
+        });
+      }
     };
 
     // Cleanup function

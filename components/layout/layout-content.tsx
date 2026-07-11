@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { Navbar } from './navbar';
 import { Footer } from './footer';
+import { TawkToWidget } from '@/components/chat/tawk-to-widget';
 
 interface LayoutContentProps {
   children: React.ReactNode;
@@ -50,6 +51,7 @@ export function LayoutContent({ children }: LayoutContentProps) {
         {children}
       </main>
       {!isDashboardPage && <Footer />}
+      <TawkToWidget />
     </>
   );
 }
