@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Menu, X, ChevronDown } from 'lucide-react';
+import { LanguageSelector } from './language-selector';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -103,8 +104,7 @@ export function Navbar() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300">GB</span>
-              <span className="text-gray-300">EN</span>
+              <LanguageSelector />
             </div>
           </div>
         </div>
