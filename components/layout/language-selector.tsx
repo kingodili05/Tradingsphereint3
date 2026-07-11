@@ -78,18 +78,18 @@ export function LanguageSelector() {
     setLang(code);
 
     const host = window.location.hostname;
+    // Google also writes the cookie on the apex domain (e.g. .example.com when
+    // browsing www.example.com), so cover every scope on both set and clear.
+    const rootDomain = host.split('.').slice(-2).join('.');
+    const scopes = ['', `domain=${host};`, `domain=.${host};`, `domain=.${rootDomain};`];
     const expire = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
 
-    if (code === 'en') {
-      // Clear the translation cookie on every domain scope Google may have set
-      document.cookie = `googtrans=; path=/; ${expire}`;
-      document.cookie = `googtrans=; path=/; domain=${host}; ${expire}`;
-      document.cookie = `googtrans=; path=/; domain=.${host}; ${expire}`;
-    } else {
-      const value = `/en/${code}`;
-      document.cookie = `googtrans=${value}; path=/`;
-      document.cookie = `googtrans=${value}; path=/; domain=${host}`;
-      document.cookie = `googtrans=${value}; path=/; domain=.${host}`;
+    for (const scope of scopes) {
+      if (code === 'en') {
+        document.cookie = `googtrans=; path=/; ${scope} ${expire}`;
+      } else {
+        document.cookie = `googtrans=/en/${code}; path=/; ${scope}`;
+      }
     }
 
     window.location.reload();
