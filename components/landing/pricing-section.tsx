@@ -6,7 +6,7 @@ import { Check } from 'lucide-react';
 const plans = [
   {
     name: 'STARTER',
-    price: '$1,000 - $9,999',
+    price: '$5,000 - $15,000',
     description: 'Perfect for new traders',
     features: [
       'Basic trading platform access',
@@ -20,7 +20,7 @@ const plans = [
   },
   {
     name: 'BRONZE',
-    price: '$10,000 - $24,999',
+    price: '$15,000 - $24,999',
     description: 'For developing traders',
     features: [
       'Advanced trading tools',
