@@ -103,8 +103,10 @@ export function BotTradingManagement() {
       const data = await res.json();
       if (data.settled > 0) {
         toast.success(`${data.settled} trade(s) settled — user notified by email`);
-        fetchTrades();
       }
+      // Always re-fetch: the trade may have been settled by another tab,
+      // the cron job, or a user dashboard ping — this tab must not stay stale.
+      fetchTrades();
     } catch {
       // network hiccup - next tick retries
     }
