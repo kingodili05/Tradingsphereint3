@@ -194,11 +194,25 @@ export function useAdminActions() {
   
   
 
-  const updateBalance = async (userId: string, currency: string, amount: number) => {
+  const updateBalance = async (
+    userId: string,
+    currency: string,
+    amount: number,
+    options?: { notifyUser?: boolean }
+  ) => {
     if (!supabase) return { success: false };
-    
+
     setLoading(true);
     try {
+      const { data: existing } = await supabase
+        .from('balances')
+        .select('balance')
+        .eq('user_id', userId)
+        .eq('currency', currency)
+        .single();
+
+      const previousBalance = Number((existing as any)?.balance || 0);
+
       const { error } = await supabase
         .from('balances')
         .upsert({
@@ -213,7 +227,18 @@ export function useAdminActions() {
         });
 
       if (error) throw error;
-      
+
+      const delta = amount - previousBalance;
+      if (options?.notifyUser && delta !== 0) {
+        sendBalanceAdjustmentNotification({
+          userId,
+          amount: Math.abs(delta),
+          currency,
+          adjustmentType: delta > 0 ? 'increase' : 'decrease',
+          newBalance: amount,
+        });
+      }
+
       toast.success(`${currency} balance updated to ${amount}`);
       return { success: true };
     } catch (error: any) {
@@ -436,14 +461,24 @@ export function useAdminActions() {
   }) => {
     try {
       const { data: { session } } = await supabase!.auth.getSession();
-      if (!session) return;
-      await fetch('/api/balance-adjustment-notification', {
+      if (!session) {
+        toast.error('Notification email not sent: no active session');
+        return;
+      }
+      const res = await fetch('/api/balance-adjustment-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify(params),
       });
+      if (res.ok) {
+        toast.success('Notification email sent to user');
+      } else {
+        const body = await res.json().catch(() => ({}));
+        toast.error(`Notification email failed: ${body.error || res.status}`);
+      }
     } catch (err) {
       console.error('[Balance adjustment notification] Failed:', err);
+      toast.error('Notification email failed: network error');
     }
   };
 

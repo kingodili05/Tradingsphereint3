@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Profile } from '@/lib/database.types';
 import { useAdminActions } from '@/hooks/use-admin-actions';
 import { useAuth } from '@/hooks/use-auth';
-import { useState, useEffect } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-client';
 import { Package as PackageType } from '@/lib/database.types';
@@ -87,6 +87,7 @@ export function AdminOperationsGrid({
   const [packageDialog, setPackageDialog] = useState(false);
   const [newBalance, setNewBalance] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [notifyUserOnBalance, setNotifyUserOnBalance] = useState(true);
   const [selectedPackageId, setSelectedPackageId] = useState('');
   const [messageData, setMessageData] = useState({
     title: '',
@@ -139,11 +140,14 @@ export function AdminOperationsGrid({
     const amount = parseFloat(newBalance);
     if (isNaN(amount)) return;
 
-    const result = await updateBalance(selectedUser.id, selectedCurrency, amount);
+    const result = await updateBalance(selectedUser.id, selectedCurrency, amount, {
+      notifyUser: notifyUserOnBalance,
+    });
     if (result.success) {
       onBalanceUpdate(selectedCurrency, amount);
       setBalanceDialog(false);
       setNewBalance('');
+      setNotifyUserOnBalance(true);
     }
   };
 
@@ -337,6 +341,16 @@ export function AdminOperationsGrid({
                 value={newBalance}
                 onChange={(e) => setNewBalance(e.target.value)}
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="notify-user-balance"
+                checked={notifyUserOnBalance}
+                onCheckedChange={(checked) => setNotifyUserOnBalance(checked === true)}
+              />
+              <Label htmlFor="notify-user-balance" className="cursor-pointer text-sm font-normal">
+                Notify user by email
+              </Label>
             </div>
             <div className="flex space-x-2">
               <Button onClick={handleEditBalance} disabled={actionLoading} className="flex-1">
