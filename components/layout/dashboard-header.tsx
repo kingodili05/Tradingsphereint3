@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Menu, Search, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ModeToggle } from '@/components/mode-toggle';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-export function DashboardHeader() {
+export function DashboardHeader({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, profile } = useAuth();
   const { getUnreadCount } = useMessages();
   const router = useRouter();
@@ -57,10 +57,21 @@ export function DashboardHeader() {
     }
   };
   return (
-    <header className="bg-white dark:bg-gray-800 border-b px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4 flex-1">
-          <div className="relative max-w-md">
+    <header className="bg-white dark:bg-gray-800 border-b px-4 md:px-6 py-3 md:py-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+          {onMenuClick && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden h-9 w-9 p-0 shrink-0"
+              onClick={onMenuClick}
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          <div className="relative max-w-md flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search assets..."
@@ -69,7 +80,7 @@ export function DashboardHeader() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-1 md:space-x-4 shrink-0">
           <Button 
             variant="ghost" 
             size="sm" 

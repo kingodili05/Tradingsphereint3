@@ -143,12 +143,12 @@ export function AdminFinanceManagement() {
             <div className="space-y-4">
               {deposits.map((deposit) => (
                 <div key={deposit.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{(deposit.profiles as any)?.full_name}</div>
-                      <div className="text-sm text-muted-foreground">{(deposit.profiles as any)?.email}</div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{(deposit.profiles as any)?.full_name}</div>
+                      <div className="text-sm text-muted-foreground truncate">{(deposit.profiles as any)?.email}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <div className="font-bold text-green-600">
                         {formatCurrency(deposit.amount, deposit.currency)}
                       </div>
@@ -165,7 +165,7 @@ export function AdminFinanceManagement() {
                     </div>
                     <div>
                       <div className="text-muted-foreground">Transaction ID</div>
-                      <div className="font-medium">{deposit.transaction_id || 'N/A'}</div>
+                      <div className="font-medium break-all">{deposit.transaction_id || 'N/A'}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Created</div>
@@ -222,12 +222,12 @@ export function AdminFinanceManagement() {
             <div className="space-y-4">
               {withdrawals.map((withdrawal) => (
                 <div key={withdrawal.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{(withdrawal.profiles as any)?.full_name}</div>
-                      <div className="text-sm text-muted-foreground">{(withdrawal.profiles as any)?.email}</div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{(withdrawal.profiles as any)?.full_name}</div>
+                      <div className="text-sm text-muted-foreground truncate">{(withdrawal.profiles as any)?.email}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <div className="font-bold text-red-600">
                         {formatCurrency(withdrawal.amount, withdrawal.currency)}
                       </div>

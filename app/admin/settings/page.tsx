@@ -33,7 +33,7 @@ export default function AdminSettingsPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Admin Settings</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Admin Settings</h1>
           <p className="text-muted-foreground">
             Manage admin account settings and platform configuration
           </p>

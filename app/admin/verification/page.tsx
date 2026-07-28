@@ -40,7 +40,7 @@ export default function AdminVerificationPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">User Verification</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">User Verification</h1>
           <p className="text-muted-foreground">
             Manage user identity and document verification
           </p>

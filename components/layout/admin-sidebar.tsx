@@ -37,8 +37,13 @@ const navigation = [
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
-export function AdminSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+export function AdminSidebarNav({
+  collapsed = false,
+  onNavigate,
+}: {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -64,8 +69,48 @@ export function AdminSidebar() {
   };
 
   return (
+    <div className="space-y-2">
+      {navigation.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link key={item.name} href={item.href} onClick={onNavigate}>
+            <Button
+              variant={isActive ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-start",
+                collapsed && "px-2"
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {!collapsed && <span className="ml-3">{item.name}</span>}
+            </Button>
+          </Link>
+        );
+      })}
+
+      <div className="mt-auto pt-4 border-t">
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className={cn(
+            "w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50",
+            collapsed && "px-2"
+          )}
+        >
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="ml-3">Logout</span>}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function AdminSidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
     <div className={cn(
-      "bg-white dark:bg-gray-800 border-r transition-all duration-300",
+      "hidden md:block bg-white dark:bg-gray-800 border-r transition-all duration-300",
       collapsed ? "w-16" : "w-64"
     )}>
       <div className="flex items-center justify-between p-4">
@@ -86,39 +131,7 @@ export function AdminSidebar() {
       </div>
 
       <ScrollArea className="flex-1 px-3">
-        <div className="space-y-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link key={item.name} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start",
-                    collapsed && "px-2"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {!collapsed && <span className="ml-3">{item.name}</span>}
-                </Button>
-              </Link>
-            );
-          })}
-          
-          <div className="mt-auto pt-4 border-t">
-            <Button
-              variant="ghost"
-              onClick={handleLogout}
-              className={cn(
-                "w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50",
-                collapsed && "px-2"
-              )}
-            >
-              <LogOut className="h-4 w-4" />
-              {!collapsed && <span className="ml-3">Logout</span>}
-            </Button>
-          </div>
-        </div>
+        <AdminSidebarNav collapsed={collapsed} />
       </ScrollArea>
     </div>
   );

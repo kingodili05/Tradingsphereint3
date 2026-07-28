@@ -8,7 +8,7 @@ export default function AdminTradersPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Expert Traders</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Expert Traders</h1>
           <p className="text-muted-foreground">
             Manage expert trader accounts and permissions
           </p>
