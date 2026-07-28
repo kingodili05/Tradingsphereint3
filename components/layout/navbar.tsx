@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,14 @@ import { LanguageSelector } from './language-selector';
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+
+  // Close the mobile menu and jump to the top whenever the route changes.
+  // iOS Safari can keep the old scroll offset after client-side navigation,
+  // leaving the user stranded mid-page after tapping a menu item.
+  useEffect(() => {
+    setIsOpen(false);
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   // Don't show navbar on dashboard or admin pages
   const isDashboardPage = pathname?.startsWith('/dashboard') || 
