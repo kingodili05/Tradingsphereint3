@@ -28,15 +28,19 @@ async function settleDueTrades() {
   let settledCount = 0;
 
   for (const trade of dueTrades as any[]) {
-    // Claim the trade: only proceed if we are the caller that flips it
-    const { data: claimed } = await supabaseAdmin
+    // Claim the trade: only proceed if we are the caller that flips it.
+    // (bot_trades has no settled_at column — updated_at trigger records the time)
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from('bot_trades')
-      .update({ status: 'settled', settled_at: new Date().toISOString() })
+      .update({ status: 'settled' })
       .eq('id', trade.id)
       .eq('status', 'active')
       .select('id')
       .single();
 
+    if (claimError && claimError.code !== 'PGRST116') {
+      console.error(`bot-trade claim failed for ${trade.id}: ${claimError.message}`);
+    }
     if (!claimed) continue; // another caller got it first
 
     const amount = Number(trade.investment_amount);

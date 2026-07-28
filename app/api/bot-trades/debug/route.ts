@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from('bot_trades')
-    .select('id, status, symbol, investment_amount, duration_minutes, created_at, expires_at, settled_at, profit_loss_amount')
+    .select('id, status, symbol, investment_amount, duration_minutes, created_at, expires_at, profit_loss_amount, email_sent')
     .order('created_at', { ascending: false })
     .limit(10);
 
