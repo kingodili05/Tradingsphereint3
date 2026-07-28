@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useTrades } from '@/hooks/use-trades';
@@ -24,6 +24,11 @@ export function HtmlDashboard() {
   const { messages, loading: messagesLoading } = useMessages();
   const { balances, loading: balancesLoading } = useBalances();
   const [activeModal, setActiveModal] = useState<string | null>(null);
+
+  // Settle any elapsed bot trades so results (balance + email) land promptly
+  useEffect(() => {
+    fetch('/api/bot-trades/settle', { method: 'POST' }).catch(() => {});
+  }, []);
   
   // Get BTC price using the existing coingecko utility
   const { data: btcPrice } = useQuery({

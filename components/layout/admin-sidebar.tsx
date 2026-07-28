@@ -21,12 +21,14 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Bot,
   TrendingUp as SignalIcon,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Overview', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Bot Trading', href: '/admin/bot-trades', icon: Bot },
   { name: 'Signals', href: '/admin/signals', icon: SignalIcon },
   { name: 'Trades', href: '/admin/trades', icon: CreditCard },
   { name: 'Deposits', href: '/admin/deposits', icon: ArrowDownToLine },

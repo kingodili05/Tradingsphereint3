@@ -473,6 +473,78 @@ export function withdrawalRejectedEmailHtml(data: {
   `)
 }
 
+export function botTradeResultEmailHtml(data: {
+  name: string
+  symbol: string
+  direction: 'buy' | 'sell'
+  investment: number
+  profitLoss: number
+  newBalance: number
+  durationMinutes: number
+}) {
+  const won = data.profitLoss >= 0
+  const fmt = (v: number) => `$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  const accentColor = won ? '#16a34a' : '#dc2626'
+  const boxBg = won ? '#f0fff4' : '#fff5f5'
+  const boxBorder = won ? '#c3f0d0' : '#fecaca'
+
+  return baseLayout(`
+    <h2 style="margin:0 0 8px;color:${accentColor};font-size:22px;">Trade ${won ? 'Won 🎉' : 'Lost'}</h2>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">Your auto trade has been completed.</p>
+
+    <p style="margin:0 0 20px;color:#444;font-size:15px;line-height:1.7;">
+      Hi <strong>${data.name}</strong>,<br/><br/>
+      Your automated trade on <strong>${data.symbol}</strong> has concluded.
+      ${won
+        ? `Great news — the trade closed <strong>in profit</strong>.`
+        : `Unfortunately, the trade closed <strong>at a loss</strong>.`}
+    </p>
+
+    <div style="background:${boxBg};border:1px solid ${boxBorder};border-radius:8px;padding:20px;margin-bottom:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:8px;">Result</td>
+          <td style="text-align:right;font-size:22px;font-weight:700;color:${accentColor};">${won ? '+' : '−'}${fmt(data.profitLoss)}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:6px;">Instrument</td>
+          <td style="text-align:right;color:#333;font-size:14px;font-weight:600;">${data.symbol}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:6px;">Direction</td>
+          <td style="text-align:right;color:#333;font-size:14px;text-transform:uppercase;">${data.direction}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:6px;">Amount Invested</td>
+          <td style="text-align:right;color:#333;font-size:14px;">${fmt(data.investment)}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:6px;">Duration</td>
+          <td style="text-align:right;color:#333;font-size:14px;">${data.durationMinutes} min</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;">New Balance</td>
+          <td style="text-align:right;color:#333;font-size:14px;font-weight:700;">${fmt(data.newBalance)}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin:0 0 24px;color:#444;font-size:14px;line-height:1.7;">
+      ${won
+        ? 'Your profit has been credited to your account and is available immediately.'
+        : 'Markets carry risk and not every position wins. Our trading team continuously refines strategy to maximise your results.'}
+    </p>
+
+    <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
+      View Dashboard
+    </a>
+
+    <p style="margin:24px 0 0;color:#888;font-size:13px;">
+      Questions? Contact <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>
+    </p>
+  `)
+}
+
 export function balanceAdjustmentEmailHtml(data: {
   name: string
   amount: number

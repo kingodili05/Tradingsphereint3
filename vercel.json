@@ -3,6 +3,10 @@
     {
       "path": "/api/keepalive",
       "schedule": "23 4 * * *"
+    },
+    {
+      "path": "/api/bot-trades/settle",
+      "schedule": "53 4 * * *"
     }
   ]
 }
