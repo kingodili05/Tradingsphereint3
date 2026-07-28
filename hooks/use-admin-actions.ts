@@ -427,6 +427,26 @@ export function useAdminActions() {
     }
   };
 
+  const sendBalanceAdjustmentNotification = async (params: {
+    userId: string;
+    amount: number;
+    currency: string;
+    adjustmentType: 'increase' | 'decrease';
+    newBalance: number;
+  }) => {
+    try {
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session) return;
+      await fetch('/api/balance-adjustment-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify(params),
+      });
+    } catch (err) {
+      console.error('[Balance adjustment notification] Failed:', err);
+    }
+  };
+
   const sendWithdrawalNotification = async (withdrawalId: string, status: 'completed' | 'failed') => {
     try {
       const { data: { session } } = await supabase!.auth.getSession();
@@ -681,8 +701,9 @@ export function useAdminActions() {
     accountType: 'demo' | 'live';
     adjustmentType: 'increase' | 'decrease';
     adminNotes: string;
+    notifyUser?: boolean;
   }) => {
-    const { adminId, userId, amount, currency, accountType, adjustmentType, adminNotes } = params;
+    const { adminId, userId, amount, currency, accountType, adjustmentType, adminNotes, notifyUser } = params;
     if (!supabase) return { success: false };
     
     setLoading(true);
@@ -737,6 +758,10 @@ export function useAdminActions() {
         }
       } catch (auditError) {
         console.warn('Audit trail table may not exist:', auditError);
+      }
+
+      if (notifyUser) {
+        sendBalanceAdjustmentNotification({ userId, amount, currency, adjustmentType, newBalance });
       }
 
       toast.success(`Balance ${adjustmentType === 'increase' ? 'added' : 'reduced'} successfully`);

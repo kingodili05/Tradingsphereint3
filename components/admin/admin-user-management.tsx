@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase-client';
 import { Profile, Package as PackageType } from '@/lib/database.types';
 import { Search, MoreHorizontal, CheckCircle, XCircle, Lock, LockOpen, Package, Ban, ShieldCheck, ShieldOff, TrendingUp, TrendingDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ export function AdminUserManagement() {
   const [balanceAccountType, setBalanceAccountType] = useState<'demo' | 'live'>('demo');
   const [balanceAdjustmentType, setBalanceAdjustmentType] = useState<'increase' | 'decrease'>('increase');
   const [balanceAdminNotes, setBalanceAdminNotes] = useState('');
+  const [balanceNotifyUser, setBalanceNotifyUser] = useState(true);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
   const newBalance = currentBalance !== null
@@ -138,6 +140,7 @@ export function AdminUserManagement() {
     setBalanceCurrency('USD');
     setBalanceAccountType('demo');
     setBalanceAdminNotes('');
+    setBalanceNotifyUser(type === 'increase');
     setBalanceDialogOpen(true);
 
     if (!supabase) return;
@@ -180,6 +183,7 @@ export function AdminUserManagement() {
       accountType: balanceAccountType,
       adjustmentType: balanceAdjustmentType,
       adminNotes: balanceAdminNotes,
+      notifyUser: balanceNotifyUser,
     });
 
     if (!result.success) {
@@ -414,7 +418,20 @@ export function AdminUserManagement() {
               </div>
               <div>
                 <Label>Amount</Label>
-                <Input type="number" min={0} value={balanceAmount} onChange={(e) => setBalanceAmount(Number(e.target.value))} />
+                <div className="flex gap-2">
+                  <Input type="number" min={0} value={balanceAmount} onChange={(e) => setBalanceAmount(Number(e.target.value))} />
+                  {balanceAdjustmentType === 'decrease' && currentBalance !== null && currentBalance > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 self-center"
+                      onClick={() => setBalanceAmount(currentBalance)}
+                    >
+                      Max
+                    </Button>
+                  )}
+                </div>
               </div>
               <div>
                 <Label>Currency</Label>
@@ -449,6 +466,16 @@ export function AdminUserManagement() {
                   </div>
                 </div>
               )}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="notify-user"
+                  checked={balanceNotifyUser}
+                  onCheckedChange={(checked) => setBalanceNotifyUser(checked === true)}
+                />
+                <Label htmlFor="notify-user" className="cursor-pointer text-sm font-normal">
+                  Notify user by email
+                </Label>
+              </div>
               <div className="flex gap-2">
                 <Button onClick={handleBalanceAdjustment} disabled={actionLoading || balanceAmount <= 0 || newBalance < 0}>
                   Confirm

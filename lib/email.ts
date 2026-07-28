@@ -472,3 +472,57 @@ export function withdrawalRejectedEmailHtml(data: {
     </p>
   `)
 }
+
+export function balanceAdjustmentEmailHtml(data: {
+  name: string
+  amount: number
+  currency: string
+  adjustmentType: 'increase' | 'decrease'
+  newBalance: number
+}) {
+  const formatAmount = (value: number) => data.currency === 'USD'
+    ? `$${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    : `${value} ${data.currency}`
+
+  const isIncrease = data.adjustmentType === 'increase'
+  const accentColor = isIncrease ? '#16a34a' : '#dc2626'
+  const boxBg = isIncrease ? '#f0fff4' : '#fff5f5'
+  const boxBorder = isIncrease ? '#c3f0d0' : '#fecaca'
+
+  return baseLayout(`
+    <h2 style="margin:0 0 8px;color:${accentColor};font-size:22px;">Account ${isIncrease ? 'Credited' : 'Debited'} ${isIncrease ? '💰' : '📋'}</h2>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">Your account balance has been updated.</p>
+
+    <p style="margin:0 0 20px;color:#444;font-size:15px;line-height:1.7;">
+      Hi <strong>${data.name}</strong>,<br/><br/>
+      Your trading account has been <strong>${isIncrease ? 'credited with' : 'debited by'} ${formatAmount(data.amount)}</strong>.
+    </p>
+
+    <div style="background:${boxBg};border:1px solid ${boxBorder};border-radius:8px;padding:20px;margin-bottom:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="color:#888;font-size:13px;padding-bottom:8px;">Amount ${isIncrease ? 'Credited' : 'Debited'}</td>
+          <td style="text-align:right;font-size:22px;font-weight:700;color:${accentColor};">${isIncrease ? '+' : '−'}${formatAmount(data.amount)}</td>
+        </tr>
+        <tr>
+          <td style="color:#888;font-size:13px;">New Balance</td>
+          <td style="text-align:right;color:#333;font-size:14px;font-weight:600;">${formatAmount(data.newBalance)}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin:0 0 24px;color:#444;font-size:14px;line-height:1.7;">
+      ${isIncrease
+        ? 'The funds are now available in your account and ready for trading.'
+        : 'If you have any questions about this adjustment, please contact our support team.'}
+    </p>
+
+    <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#1a3c8f;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">
+      View Dashboard
+    </a>
+
+    <p style="margin:24px 0 0;color:#888;font-size:13px;">
+      Questions? Contact <a href="mailto:${ADMIN_EMAIL}" style="color:#1a3c8f;">${ADMIN_EMAIL}</a>
+    </p>
+  `)
+}
