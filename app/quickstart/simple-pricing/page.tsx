@@ -8,7 +8,7 @@ import Link from 'next/link';
 const pricingPlans = [
   {
     name: 'STARTER',
-    price: '$1,000 - $9,999',
+    price: '$5,000 - $9,999',
     description: 'Perfect for new traders',
     features: [
       'Basic trading tools',
@@ -91,42 +91,6 @@ const pricingPlans = [
     ],
     limitations: [],
     cta: 'Contact for Diamond',
-    popular: false,
-  },
-  {
-    name: 'Professional',
-    price: '$49',
-    period: '/month',
-    description: 'For serious traders',
-    features: [
-      'Real-time market data',
-      'Priority support',
-      'API access',
-      'Risk management tools',
-      'Advanced order types',
-      'Portfolio analytics',
-    ],
-    limitations: [],
-    cta: 'Start Trading',
-    popular: true,
-  },
-  {
-    name: 'Enterprise',
-    price: '$99',
-    period: '/month',
-    description: 'For institutions',
-    features: [
-      'Everything in Professional',
-      'Dedicated account manager',
-      'Custom integrations',
-      'White-label solutions',
-      'Institutional pricing',
-      'Advanced risk controls',
-      'Multi-user access',
-      'Custom reporting',
-    ],
-    limitations: [],
-    cta: 'Contact Sales',
     popular: false,
   },
 ];
