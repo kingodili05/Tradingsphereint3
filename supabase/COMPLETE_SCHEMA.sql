@@ -309,6 +309,7 @@ CREATE TABLE IF NOT EXISTS public.bot_trades (
   profit_loss_amount decimal(20,2),
   final_balance decimal(20,2),
   email_sent boolean NOT NULL DEFAULT false,
+  notified_at timestamptz,
   linked_trade_id uuid REFERENCES public.trades(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -342,6 +343,7 @@ CREATE INDEX IF NOT EXISTS idx_historical_prices_symbol ON historical_prices(sym
 CREATE INDEX IF NOT EXISTS idx_historical_prices_symbol_timeframe ON historical_prices(symbol, timeframe);
 CREATE INDEX IF NOT EXISTS idx_bot_trades_user ON public.bot_trades (user_id);
 CREATE INDEX IF NOT EXISTS idx_bot_trades_due ON public.bot_trades (status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_bot_trades_pending_notice ON public.bot_trades (user_id, status, notified_at);
 
 -- ============================================================
 -- 14. ENABLE ROW LEVEL SECURITY

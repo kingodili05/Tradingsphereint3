@@ -7,6 +7,7 @@ import { DashboardSidebar } from '@/components/dashboard/html-dashboard-sidebar'
 import { DashboardTopbar } from '@/components/dashboard/dashboard-topbar';
 import { TradingViewTicker } from '@/components/dashboard/tradingview-ticker';
 import { TradeResultPopup } from '@/components/dashboard/trade-result-popup';
+import { BotTradeResultPopup } from '@/components/dashboard/bot-trade-result-popup';
 import { AccountBlocked } from '@/components/dashboard/account-blocked';
 
 interface DashboardLayoutProps {
@@ -39,6 +40,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {children}
           </main>
           <TradeResultPopup />
+          <BotTradeResultPopup />
         </div>
       </div>
     </div>

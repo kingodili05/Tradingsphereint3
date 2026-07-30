@@ -16,6 +16,7 @@ import { DashboardTopbar } from './dashboard-topbar';
 import { DashboardModals } from './dashboard-modals';
 import { DashboardSidebar } from './html-dashboard-sidebar';
 import { TradingViewTicker } from './tradingview-ticker';
+import { BotTradeResultPopup } from './bot-trade-result-popup';
 import { getBtcUsdPrice } from '@/lib/coingecko';
 
 export function HtmlDashboard() {
@@ -115,10 +116,12 @@ export function HtmlDashboard() {
       </div>
 
       {/* Dashboard Modals */}
-      <DashboardModals 
+      <DashboardModals
         activeModal={activeModal}
         onClose={() => setActiveModal(null)}
       />
+
+      <BotTradeResultPopup />
     </div>
   );
 }
