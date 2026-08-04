@@ -93,3 +93,20 @@ export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
+
+export const resetPasswordForEmail = async (email: string) => {
+  if (!supabase) {
+    return { data: null, error: { message: 'Supabase not available (SSR).' } }
+  }
+  const redirectTo = `${window.location.origin}/auth/reset-password`
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+  return { data, error }
+}
+
+export const updatePassword = async (newPassword: string) => {
+  if (!supabase) {
+    return { data: null, error: { message: 'Supabase not available (SSR).' } }
+  }
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+  return { data, error }
+}
