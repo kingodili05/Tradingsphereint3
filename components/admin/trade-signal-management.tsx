@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
+import { useLivePrices, formatUsd, formatChangePercent } from '@/hooks/use-live-prices';
 import { supabase } from '@/lib/supabase-client';
 import {
   Plus, Play, Clock, TrendingUp, TrendingDown, Target, Users, DollarSign, Copy, Check, Zap, UserCheck
@@ -50,11 +51,16 @@ const COMMODITIES = [
   { value: 'OIL', label: 'Crude Oil (WTI)' },
   { value: 'BTC', label: 'Bitcoin (BTC/USD)' },
   { value: 'ETH', label: 'Ethereum (ETH/USD)' },
+  { value: 'XRP', label: 'XRP (XRP/USD)' },
   { value: 'EUR/USD', label: 'EUR/USD' },
   { value: 'GBP/USD', label: 'GBP/USD' },
   { value: 'AAPL', label: 'Apple Stock' },
   { value: 'TSLA', label: 'Tesla Stock' },
+  { value: 'HIMS', label: 'Hims & Hers Health Stock' },
   { value: 'SPX500', label: 'S&P 500' },
+  { value: 'SPY', label: 'SPY (SPDR S&P 500 ETF)' },
+  { value: 'QQQ', label: 'QQQ (Invesco QQQ Trust)' },
+  { value: 'DIA', label: 'DIA (SPDR Dow Jones ETF)' },
 ];
 
 function generateSignalCode() {
@@ -71,6 +77,14 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function TradeSignalManagement() {
   const { user, isAdmin } = useAuth();
+  const { data: livePrices } = useLivePrices();
+
+  // Trending (biggest live movers) float to the top so admins can spot them fast
+  const sortedCommodities = useMemo(() => {
+    return [...COMMODITIES]
+      .map(c => ({ ...c, live: livePrices?.[c.value] }))
+      .sort((a, b) => Math.abs(b.live?.changePercent ?? 0) - Math.abs(a.live?.changePercent ?? 0));
+  }, [livePrices]);
   const [signals, setSignals] = useState<AdminTradeSignal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'signals' | 'direct'>('signals');
@@ -505,7 +519,12 @@ export function TradeSignalManagement() {
                 <Select value={directTrade.commodity} onValueChange={v => setDirectTrade({ ...directTrade, commodity: v })}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
-                    {COMMODITIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {sortedCommodities.map(c => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                        {c.live && ` — ${formatUsd(c.live.price)} (${formatChangePercent(c.live.changePercent)})`}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -604,7 +623,14 @@ export function TradeSignalManagement() {
                 <Label>Commodity</Label>
                 <Select value={newSignal.commodity} onValueChange={v => setNewSignal({ ...newSignal, commodity: v })}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{COMMODITIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {sortedCommodities.map(c => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                        {c.live && ` — ${formatUsd(c.live.price)} (${formatChangePercent(c.live.changePercent)})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
             </div>

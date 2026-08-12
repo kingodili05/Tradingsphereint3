@@ -68,9 +68,9 @@ export function TradeForm() {
       case 'forex':
         return ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD'];
       case 'crypto':
-        return ['BTC/USD', 'ETH/USD', 'ADA/USD', 'SOL/USD', 'DOT/USD'];
+        return ['BTC/USD', 'ETH/USD', 'ADA/USD', 'SOL/USD', 'DOT/USD', 'XRP/USD'];
       case 'stocks':
-        return ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN'];
+        return ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'HIMS', 'SPY', 'QQQ', 'DIA'];
       case 'commodities':
         return ['GOLD', 'SILVER', 'OIL', 'NATGAS', 'COPPER'];
       case 'indices':

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase-client';
+import { useLivePrices, formatUsd, formatChangePercent } from '@/hooks/use-live-prices';
 import { toast } from 'sonner';
 import { Bot, TrendingUp, TrendingDown, XCircle, Clock } from 'lucide-react';
 
@@ -39,7 +40,8 @@ const SYMBOLS = [
   'BTC/USD', 'ETH/USD', 'XRP/USD', 'SOL/USD',
   'EUR/USD', 'GBP/USD', 'USD/JPY',
   'GOLD', 'SILVER', 'CRUDE OIL',
-  'AAPL', 'TSLA', 'NVDA', 'AMZN',
+  'AAPL', 'TSLA', 'NVDA', 'AMZN', 'HIMS',
+  'SPY', 'QQQ', 'DIA',
 ];
 
 const DURATIONS = [
@@ -63,10 +65,18 @@ function formatCountdown(expiresAt: string): string {
 }
 
 export function BotTradingManagement() {
+  const { data: livePrices } = useLivePrices();
   const [users, setUsers] = useState<UserOption[]>([]);
   const [trades, setTrades] = useState<BotTrade[]>([]);
   const [loading, setLoading] = useState(false);
   const [now, setNow] = useState(Date.now());
+
+  // Trending (biggest live movers) float to the top so admins can spot them fast
+  const sortedSymbols = useMemo(() => {
+    return [...SYMBOLS]
+      .map(s => ({ symbol: s, live: livePrices?.[s.replace('/USD', '')] }))
+      .sort((a, b) => Math.abs(b.live?.changePercent ?? 0) - Math.abs(a.live?.changePercent ?? 0));
+  }, [livePrices]);
 
   const [selectedUserId, setSelectedUserId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USD');
@@ -225,7 +235,12 @@ export function BotTradingManagement() {
               <Select value={symbol} onValueChange={setSymbol}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {SYMBOLS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {sortedSymbols.map(({ symbol: s, live }) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                      {live && ` — ${formatUsd(live.price)} (${formatChangePercent(live.changePercent)})`}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

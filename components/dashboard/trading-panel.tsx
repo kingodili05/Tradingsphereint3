@@ -213,6 +213,10 @@ export function TradingPanel() {
           { value: 'GOOGL', label: 'GOOGL (Alphabet Inc.)' },
           { value: 'TSLA', label: 'TSLA (Tesla Inc.)' },
           { value: 'AMZN', label: 'AMZN (Amazon.com Inc.)' },
+          { value: 'HIMS', label: 'HIMS (Hims & Hers Health Inc.)' },
+          { value: 'SPY', label: 'SPY (SPDR S&P 500 ETF)' },
+          { value: 'QQQ', label: 'QQQ (Invesco QQQ Trust)' },
+          { value: 'DIA', label: 'DIA (SPDR Dow Jones Industrial Average ETF)' },
         ];
       case 'INDICES':
         return [

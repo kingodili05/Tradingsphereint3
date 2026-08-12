@@ -195,6 +195,10 @@ export default function TradeRealAccountPage() {
           { value: 'NVDA', label: 'NVDA (NVIDIA Corporation)' },
           { value: 'META', label: 'META (Meta Platforms Inc.)' },
           { value: 'NFLX', label: 'NFLX (Netflix Inc.)' },
+          { value: 'HIMS', label: 'HIMS (Hims & Hers Health Inc.)' },
+          { value: 'SPY', label: 'SPY (SPDR S&P 500 ETF)' },
+          { value: 'QQQ', label: 'QQQ (Invesco QQQ Trust)' },
+          { value: 'DIA', label: 'DIA (SPDR Dow Jones Industrial Average ETF)' },
         ];
       case 'INDICES':
         return [

@@ -47,4 +47,55 @@ export type BtcPriceResult = {
   export function clearBtcPriceCache() {
     cachedPrice = null;
   }
-  
+
+  export interface CoinPrice {
+    usd: number;
+    usd24hChange: number;
+  }
+
+  interface CoinCacheEntry {
+    prices: Record<string, CoinPrice>;
+    fetchedAt: number;
+  }
+
+  let coinCache: CoinCacheEntry | null = null;
+  const COIN_CACHE_TTL = 30 * 1000; // 30 seconds
+
+  /**
+   * Fetches USD price + 24h change for multiple CoinGecko coin ids in one
+   * request, cached in-memory for 30s. Keyed by coingecko id (e.g. "ripple"),
+   * not the trading symbol.
+   */
+  export async function getCoinPrices(ids: string[]): Promise<Record<string, CoinPrice>> {
+    if (ids.length === 0) return {};
+
+    const now = Date.now();
+    if (coinCache && now - coinCache.fetchedAt < COIN_CACHE_TTL) {
+      const cached = coinCache;
+      const hasAll = ids.every((id) => id in cached.prices);
+      if (hasAll) return cached.prices;
+    }
+
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_24hr_change=true`;
+    const res = await fetch(url, { method: 'GET' });
+
+    if (!res.ok) {
+      throw new Error(`CoinGecko request failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    const prices: Record<string, CoinPrice> = {};
+
+    for (const id of ids) {
+      const entry = data?.[id];
+      if (entry && typeof entry.usd === 'number') {
+        prices[id] = {
+          usd: entry.usd,
+          usd24hChange: typeof entry.usd_24h_change === 'number' ? entry.usd_24h_change : 0,
+        };
+      }
+    }
+
+    coinCache = { prices, fetchedAt: now };
+    return prices;
+  }

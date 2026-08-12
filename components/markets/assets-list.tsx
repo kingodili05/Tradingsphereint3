@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, TrendingUp, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
+import { useLivePrices, formatUsd, formatChangePercent } from '@/hooks/use-live-prices';
 
 const assets = {
   crypto: [
@@ -16,6 +17,7 @@ const assets = {
     { symbol: 'ETH', name: 'Ethereum', price: '$2,650.00', change: '+1.8%', trend: 'up', volume: '$1.8B' },
     { symbol: 'ADA', name: 'Cardano', price: '$0.485', change: '-0.7%', trend: 'down', volume: '$245M' },
     { symbol: 'SOL', name: 'Solana', price: '$98.45', change: '+4.2%', trend: 'up', volume: '$892M' },
+    { symbol: 'XRP', name: 'XRP', price: '$0.615', change: '+3.4%', trend: 'up', volume: '$1.6B' },
   ],
   forex: [
     { symbol: 'EUR/USD', name: 'Euro / US Dollar', price: '1.0875', change: '+0.12%', trend: 'up', volume: '$1.2B' },
@@ -28,10 +30,12 @@ const assets = {
     { symbol: 'GOOGL', name: 'Alphabet Inc.', price: '$142.80', change: '-0.5%', trend: 'down', volume: '$1.9B' },
     { symbol: 'MSFT', name: 'Microsoft Corp.', price: '$378.85', change: '+0.8%', trend: 'up', volume: '$2.1B' },
     { symbol: 'TSLA', name: 'Tesla Inc.', price: '$248.50', change: '+3.1%', trend: 'up', volume: '$3.2B' },
+    { symbol: 'HIMS', name: 'Hims & Hers Health Inc.', price: '$21.40', change: '+2.1%', trend: 'up', volume: '$210M' },
   ],
   etfs: [
     { symbol: 'SPY', name: 'SPDR S&P 500 ETF', price: '$459.80', change: '+0.6%', trend: 'up', volume: '$8.9B' },
     { symbol: 'QQQ', name: 'Invesco QQQ Trust', price: '$389.25', change: '+0.9%', trend: 'up', volume: '$4.2B' },
+    { symbol: 'DIA', name: 'SPDR Dow Jones Industrial Average ETF', price: '$385.15', change: '+0.5%', trend: 'up', volume: '$1.1B' },
     { symbol: 'VTI', name: 'Vanguard Total Stock Market', price: '$245.60', change: '+0.4%', trend: 'up', volume: '$1.8B' },
     { symbol: 'IWM', name: 'iShares Russell 2000', price: '$198.75', change: '-0.3%', trend: 'down', volume: '$2.1B' },
   ],
@@ -45,6 +49,7 @@ const assets = {
 
 export function AssetsList() {
   const [searchTerm, setSearchTerm] = useState('');
+  const { data: livePrices } = useLivePrices();
 
   return (
     <Card>
@@ -81,32 +86,42 @@ export function AssetsList() {
                     asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
                   )
-                  .map((asset, index) => (
+                  .map((asset, index) => {
+                    const live = livePrices?.[asset.symbol];
+                    const price = live ? formatUsd(live.price) : asset.price;
+                    const change = live ? formatChangePercent(live.changePercent) : asset.change;
+                    const trend = live?.trend ?? asset.trend;
+
+                    return (
                     <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                       <div className="flex items-center space-x-4">
                         <div>
-                          <div className="font-medium">{asset.symbol}</div>
+                          <div className="font-medium flex items-center gap-1.5">
+                            {asset.symbol}
+                            {live && <span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Live price" />}
+                          </div>
                           <div className="text-sm text-muted-foreground">{asset.name}</div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-4">
                         <div className="text-right">
-                          <div className="font-medium">{asset.price}</div>
+                          <div className="font-medium">{price}</div>
                           <div className="text-sm text-muted-foreground">Vol: {asset.volume}</div>
                         </div>
-                        
-                        <div className={`flex items-center ${asset.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                          {asset.trend === 'up' ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                          {asset.change}
+
+                        <div className={`flex items-center ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                          {trend === 'up' ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                          {change}
                         </div>
-                        
+
                         <Link href={`/markets/${category}/${asset.symbol}`}>
                           <Button size="sm">Trade</Button>
                         </Link>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
               </div>
             </TabsContent>
           ))}

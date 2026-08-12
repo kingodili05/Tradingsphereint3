@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Building2, TrendingUp, BarChart3, Globe, DollarSign, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { useLivePrices, formatUsd, formatChangePercent } from '@/hooks/use-live-prices';
 
 const stocks = [
   { symbol: 'AAPL', name: 'Apple Inc.', price: '$189.45', spread: 'Market', volume: '$2.8B', change: '+1.2%', trend: 'up', sector: 'Technology', exchange: 'NASDAQ' },
@@ -15,6 +16,10 @@ const stocks = [
   { symbol: 'NVDA', name: 'NVIDIA Corp.', price: '$456.78', spread: 'Market', volume: '$4.1B', change: '+2.3%', trend: 'up', sector: 'Semiconductors', exchange: 'NASDAQ' },
   { symbol: 'JPM', name: 'JPMorgan Chase', price: '$156.89', spread: 'Market', volume: '$1.8B', change: '+0.4%', trend: 'up', sector: 'Banking', exchange: 'NYSE' },
   { symbol: 'JNJ', name: 'Johnson & Johnson', price: '$167.45', spread: 'Market', volume: '$1.2B', change: '-0.2%', trend: 'down', sector: 'Healthcare', exchange: 'NYSE' },
+  { symbol: 'HIMS', name: 'Hims & Hers Health Inc.', price: '$21.40', spread: 'Market', volume: '$210M', change: '+2.1%', trend: 'up', sector: 'Healthcare', exchange: 'NYSE' },
+  { symbol: 'SPY', name: 'SPDR S&P 500 ETF', price: '$459.80', spread: 'Market', volume: '$8.9B', change: '+0.6%', trend: 'up', sector: 'ETF', exchange: 'NYSE Arca' },
+  { symbol: 'QQQ', name: 'Invesco QQQ Trust', price: '$389.25', spread: 'Market', volume: '$4.2B', change: '+0.9%', trend: 'up', sector: 'ETF', exchange: 'NASDAQ' },
+  { symbol: 'DIA', name: 'SPDR Dow Jones Industrial Average ETF', price: '$385.15', spread: 'Market', volume: '$1.1B', change: '+0.5%', trend: 'up', sector: 'ETF', exchange: 'NYSE Arca' },
 ];
 
 const stockFeatures = [
@@ -60,6 +65,8 @@ const stockSectors = [
 ];
 
 export default function StocksPage() {
+  const { data: livePrices } = useLivePrices();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -128,7 +135,13 @@ export default function StocksPage() {
                 </tr>
               </thead>
               <tbody>
-                {stocks.map((stock, index) => (
+                {stocks.map((stock, index) => {
+                  const live = livePrices?.[stock.symbol];
+                  const price = live ? formatUsd(live.price) : stock.price;
+                  const change = live ? formatChangePercent(live.changePercent) : stock.change;
+                  const trend = live?.trend ?? stock.trend;
+
+                  return (
                   <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-3">
@@ -136,19 +149,22 @@ export default function StocksPage() {
                           <span className="text-blue-500 font-bold text-sm">{stock.symbol.slice(0, 2)}</span>
                         </div>
                         <div>
-                          <div className="font-semibold text-white">{stock.symbol}</div>
+                          <div className="font-semibold text-white flex items-center gap-1.5">
+                            {stock.symbol}
+                            {live && <span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Live price" />}
+                          </div>
                           <div className="text-sm text-gray-400">{stock.name}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-white font-semibold">{stock.price}</td>
+                    <td className="py-4 px-6 text-white font-semibold">{price}</td>
                     <td className="py-4 px-6 text-gray-300">{stock.volume}</td>
                     <td className="py-4 px-6">
                       <Badge variant="outline" className="text-xs">{stock.sector}</Badge>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`${stock.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {stock.change}
+                      <span className={`${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                        {change}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -159,7 +175,8 @@ export default function StocksPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

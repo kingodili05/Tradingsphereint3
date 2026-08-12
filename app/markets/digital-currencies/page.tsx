@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bitcoin, TrendingUp, Shield, Zap, Globe, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
+import { useLivePrices, formatUsd, formatChangePercent } from '@/hooks/use-live-prices';
 
 const cryptocurrencies = [
   { symbol: 'BTC', name: 'Bitcoin', price: '$43,250.00', spread: '0.1%', volume: '$28.5B', change: '+2.5%', trend: 'up', marketCap: '$845.2B' },
@@ -15,6 +16,7 @@ const cryptocurrencies = [
   { symbol: 'MATIC', name: 'Polygon', price: '$0.89', spread: '0.25%', volume: '$234M', change: '+3.1%', trend: 'up', marketCap: '$8.2B' },
   { symbol: 'LINK', name: 'Chainlink', price: '$14.56', spread: '0.2%', volume: '$345M', change: '+2.8%', trend: 'up', marketCap: '$8.1B' },
   { symbol: 'UNI', name: 'Uniswap', price: '$6.78', spread: '0.3%', volume: '$189M', change: '-1.2%', trend: 'down', marketCap: '$4.1B' },
+  { symbol: 'XRP', name: 'XRP', price: '$0.615', spread: '0.15%', volume: '$1.6B', change: '+3.4%', trend: 'up', marketCap: '$34.6B' },
 ];
 
 const cryptoFeatures = [
@@ -78,6 +80,8 @@ const cryptoCategories = [
 ];
 
 export default function DigitalCurrenciesPage() {
+  const { data: livePrices } = useLivePrices();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -157,7 +161,13 @@ export default function DigitalCurrenciesPage() {
                 </tr>
               </thead>
               <tbody>
-                {cryptocurrencies.map((crypto, index) => (
+                {cryptocurrencies.map((crypto, index) => {
+                  const live = livePrices?.[crypto.symbol];
+                  const price = live ? formatUsd(live.price) : crypto.price;
+                  const change = live ? formatChangePercent(live.changePercent) : crypto.change;
+                  const trend = live?.trend ?? crypto.trend;
+
+                  return (
                   <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-3">
@@ -165,18 +175,21 @@ export default function DigitalCurrenciesPage() {
                           <span className="text-orange-500 font-bold text-sm">{crypto.symbol.slice(0, 2)}</span>
                         </div>
                         <div>
-                          <div className="font-semibold text-white">{crypto.symbol}</div>
+                          <div className="font-semibold text-white flex items-center gap-1.5">
+                            {crypto.symbol}
+                            {live && <span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Live price" />}
+                          </div>
                           <div className="text-sm text-gray-400">{crypto.name}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-white font-semibold">{crypto.price}</td>
+                    <td className="py-4 px-6 text-white font-semibold">{price}</td>
                     <td className="py-4 px-6 text-green-400">{crypto.spread}</td>
                     <td className="py-4 px-6 text-gray-300">{crypto.volume}</td>
                     <td className="py-4 px-6 text-gray-300">{crypto.marketCap}</td>
                     <td className="py-4 px-6">
-                      <span className={`${crypto.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {crypto.change}
+                      <span className={`${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                        {change}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -187,7 +200,8 @@ export default function DigitalCurrenciesPage() {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

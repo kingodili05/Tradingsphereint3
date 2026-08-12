@@ -3,22 +3,37 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Star } from 'lucide-react';
+import { useLivePrices, formatUsd, formatChangePercent } from '@/hooks/use-live-prices';
 
 interface AssetHeaderProps {
   category: string;
   symbol: string;
 }
 
+const SYMBOL_INFO: Record<string, { name: string; price: string }> = {
+  BTC: { name: 'Bitcoin', price: '$43,250.00' },
+  AAPL: { name: 'Apple Inc.', price: '$189.45' },
+  XRP: { name: 'XRP', price: '$0.615' },
+  HIMS: { name: 'Hims & Hers Health Inc.', price: '$21.40' },
+  SPY: { name: 'SPDR S&P 500 ETF', price: '$459.80' },
+  QQQ: { name: 'Invesco QQQ Trust', price: '$389.25' },
+  DIA: { name: 'SPDR Dow Jones Industrial Average ETF', price: '$385.15' },
+};
+
 export function AssetHeader({ category, symbol }: AssetHeaderProps) {
-  // Mock data based on symbol
+  const { data: livePrices } = useLivePrices();
+  const live = livePrices?.[symbol];
+
+  // Falls back to mock data when there's no live feed for this symbol
   const assetData = {
-    name: symbol === 'BTC' ? 'Bitcoin' : symbol === 'AAPL' ? 'Apple Inc.' : symbol,
-    price: symbol === 'BTC' ? '$43,250.00' : symbol === 'AAPL' ? '$189.45' : '$1,234.56',
-    change: '+2.5%',
-    changeValue: '+$1,056.30',
+    name: SYMBOL_INFO[symbol]?.name ?? symbol,
+    price: live ? formatUsd(live.price) : SYMBOL_INFO[symbol]?.price ?? '$1,234.56',
+    change: live ? formatChangePercent(live.changePercent) : '+2.5%',
+    changeValue: live ? formatUsd(Math.abs(live.change)) : '+$1,056.30',
     volume: '$2.1B',
     marketCap: '$845.2B',
-    trend: 'up' as const,
+    trend: live?.trend ?? ('up' as const),
+    isLive: Boolean(live),
   };
 
   return (
@@ -32,6 +47,7 @@ export function AssetHeader({ category, symbol }: AssetHeaderProps) {
             <div className="flex items-center space-x-2">
               <h1 className="text-2xl font-bold">{symbol}</h1>
               <Badge variant="secondary" className="capitalize">{category}</Badge>
+              {assetData.isLive && <span className="h-1.5 w-1.5 rounded-full bg-green-500" title="Live price" />}
             </div>
             <p className="text-muted-foreground">{assetData.name}</p>
           </div>
