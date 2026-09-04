@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -90,6 +91,8 @@ export function DashboardModals({ activeModal, onClose }: DashboardModalsProps) 
     if (result.success) {
       setWithdrawData({ amount: '', currency: 'USD', withdrawal_method: '', destination_address: '' });
       onClose();
+    } else if ('hold' in result && result.hold) {
+      toast.error(result.message, { duration: 10000 });
     }
   };
 

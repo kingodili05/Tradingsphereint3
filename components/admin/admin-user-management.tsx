@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase-client';
 import { Profile, Package as PackageType } from '@/lib/database.types';
-import { Search, MoreHorizontal, CheckCircle, XCircle, Lock, LockOpen, Package, Ban, ShieldCheck, ShieldOff, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, MoreHorizontal, CheckCircle, XCircle, Lock, LockOpen, Package, Ban, ShieldCheck, ShieldOff, TrendingUp, TrendingDown, PauseCircle, PlayCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -44,6 +45,8 @@ export function AdminUserManagement() {
     toggleVerification,
     upgradeUserPackage,
     adjustUserBalance,
+    setWithdrawalHold,
+    clearWithdrawalHold,
     loading: actionLoading,
   } = useAdminActions();
 
@@ -66,6 +69,10 @@ export function AdminUserManagement() {
   const [balanceAdminNotes, setBalanceAdminNotes] = useState('');
   const [balanceNotifyUser, setBalanceNotifyUser] = useState(true);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+
+  // Withdrawal Hold Dialog
+  const [holdDialogOpen, setHoldDialogOpen] = useState(false);
+  const [holdMessageInput, setHoldMessageInput] = useState('');
 
   const newBalance = currentBalance !== null
     ? balanceAdjustmentType === 'increase'
@@ -196,6 +203,27 @@ export function AdminUserManagement() {
     await fetchUsers();
   };
 
+  const openHoldDialog = (user: Profile) => {
+    setSelectedUser(user);
+    setHoldMessageInput((user as any).withdrawal_hold_message || '');
+    setHoldDialogOpen(true);
+  };
+
+  const handleSetHold = async () => {
+    if (!selectedUser || !holdMessageInput.trim()) return;
+    const result = await setWithdrawalHold(selectedUser.id, holdMessageInput.trim());
+    if (result.success) {
+      setHoldDialogOpen(false);
+      setSelectedUser(null);
+      await fetchUsers();
+    }
+  };
+
+  const handleClearHold = async (userId: string) => {
+    const result = await clearWithdrawalHold(userId);
+    if (result.success) await fetchUsers();
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch =
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -294,6 +322,11 @@ export function AdminUserManagement() {
                                 Address ✓
                               </span>
                             )}
+                            {(user as any).withdrawal_hold_active && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-600 border-orange-500/20">
+                                Withdrawal Hold
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -362,6 +395,20 @@ export function AdminUserManagement() {
                             <Package className="h-4 w-4 mr-2" />
                             Change Package
                           </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
+
+                          {/* Withdrawal hold */}
+                          <DropdownMenuItem onClick={() => openHoldDialog(user)}>
+                            <PauseCircle className="h-4 w-4 mr-2 text-orange-600" />
+                            {(user as any).withdrawal_hold_active ? 'Edit Withdrawal Hold' : 'Set Withdrawal Hold'}
+                          </DropdownMenuItem>
+                          {(user as any).withdrawal_hold_active && (
+                            <DropdownMenuItem onClick={() => handleClearHold(user.id)}>
+                              <PlayCircle className="h-4 w-4 mr-2 text-green-600" />
+                              Clear Withdrawal Hold
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -481,6 +528,40 @@ export function AdminUserManagement() {
                   Confirm
                 </Button>
                 <Button variant="outline" onClick={() => setBalanceDialogOpen(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdrawal Hold Dialog */}
+      <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Set Withdrawal Hold</DialogTitle></DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div>
+                <Label>User</Label>
+                <div className="text-sm text-muted-foreground">{selectedUser.full_name} ({selectedUser.email})</div>
+              </div>
+              <div>
+                <Label>Message shown to user on withdrawal request</Label>
+                <Textarea
+                  value={holdMessageInput}
+                  onChange={(e) => setHoldMessageInput(e.target.value)}
+                  placeholder="e.g. Your trading cycle is not yet complete. Withdrawals unlock after 30 days."
+                  rows={4}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                While active, withdrawal requests are still recorded (visible below) but are not approvable
+                until the hold is cleared. The user sees this message instead of a normal confirmation.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={handleSetHold} disabled={actionLoading || !holdMessageInput.trim()}>
+                  Save Hold
+                </Button>
+                <Button variant="outline" onClick={() => setHoldDialogOpen(false)}>Cancel</Button>
               </div>
             </div>
           )}

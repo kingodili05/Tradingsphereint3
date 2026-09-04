@@ -137,6 +137,35 @@ export function useUserActions() {
     
     setLoading(true);
     try {
+      // Admin-set hold takes priority over the balance check: still register the
+      // attempt so admins can see it, but don't let it reach the approval queue.
+      const { data: holdProfile } = await supabase
+        .from('profiles')
+        .select('withdrawal_hold_active, withdrawal_hold_message')
+        .eq('id', userId)
+        .single();
+
+      if (holdProfile?.withdrawal_hold_active) {
+        const holdMessage = holdProfile.withdrawal_hold_message
+          || 'Withdrawals are currently on hold for your account. Please contact support for details.';
+
+        const { error: holdInsertError } = await supabase
+          .from('withdrawals')
+          .insert({
+            user_id: userId,
+            amount: withdrawalData.amount,
+            currency: withdrawalData.currency,
+            withdrawal_method: withdrawalData.withdrawal_method,
+            destination_address: withdrawalData.destination_address,
+            bank_details: withdrawalData.bank_details,
+            status: 'on_hold',
+          });
+
+        if (holdInsertError) throw holdInsertError;
+
+        return { success: false, hold: true, message: holdMessage };
+      }
+
       // Check balance first
       const { data: balance } = await supabase
         .from('balances')

@@ -95,6 +95,7 @@ export function AdminFinanceManagement() {
       case 'completed': return 'bg-green-500';
       case 'processing': return 'bg-blue-500';
       case 'pending': return 'bg-yellow-500';
+      case 'on_hold': return 'bg-purple-500';
       case 'failed': return 'bg-red-500';
       case 'cancelled': return 'bg-gray-500';
       default: return 'bg-gray-500';
@@ -232,7 +233,7 @@ export function AdminFinanceManagement() {
                         {formatCurrency(withdrawal.amount, withdrawal.currency)}
                       </div>
                       <Badge className={getStatusColor(withdrawal.status)}>
-                        {withdrawal.status}
+                        {withdrawal.status === 'on_hold' ? 'On Hold' : withdrawal.status}
                       </Badge>
                     </div>
                   </div>

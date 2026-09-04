@@ -110,6 +110,58 @@ export function useAdminActions() {
     }
   };
 
+  const setWithdrawalHold = async (userId: string, message: string) => {
+    if (!supabase) return { success: false };
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          withdrawal_hold_active: true,
+          withdrawal_hold_message: message,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success('Withdrawal hold applied');
+      return { success: true };
+    } catch (error: any) {
+      toast.error('Failed to apply withdrawal hold: ' + error.message);
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearWithdrawalHold = async (userId: string) => {
+    if (!supabase) return { success: false };
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          withdrawal_hold_active: false,
+          withdrawal_hold_message: null,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success('Withdrawal hold cleared');
+      return { success: true };
+    } catch (error: any) {
+      toast.error('Failed to clear withdrawal hold: ' + error.message);
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const setTradeResult = async (
     tradeId: string,
     result: 'profit' | 'loss'
@@ -815,6 +867,8 @@ export function useAdminActions() {
     lockAccount,
     unlockAccount,
     suspendAccount,
+    setWithdrawalHold,
+    clearWithdrawalHold,
     setTradeResult,
     updateBalance,
     adjustUserBalance,

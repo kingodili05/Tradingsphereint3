@@ -32,6 +32,8 @@ export interface Database {
           referral_bonus: number
           total_deposits: number
           total_withdrawals: number
+          withdrawal_hold_active: boolean
+          withdrawal_hold_message: string | null
           created_at: string
           updated_at: string
         }
@@ -56,6 +58,8 @@ export interface Database {
           referral_bonus?: number
           total_deposits?: number
           total_withdrawals?: number
+          withdrawal_hold_active?: boolean
+          withdrawal_hold_message?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -80,6 +84,8 @@ export interface Database {
           referral_bonus?: number
           total_deposits?: number
           total_withdrawals?: number
+          withdrawal_hold_active?: boolean
+          withdrawal_hold_message?: string | null
           created_at?: string
           updated_at?: string
         }

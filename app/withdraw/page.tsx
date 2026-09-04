@@ -23,7 +23,8 @@ import {
   ShoppingCart,
   Package,
   HelpCircle,
-  LogOut
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import { signOut } from '@/lib/supabase-client';
 import { toast } from 'sonner';
@@ -44,6 +45,8 @@ export default function WithdrawPage() {
     bankDetails: '',
   });
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [holdDialogOpen, setHoldDialogOpen] = useState(false);
+  const [holdMessage, setHoldMessage] = useState('');
 
   const handleLogout = async () => {
     try {
@@ -75,6 +78,11 @@ export default function WithdrawPage() {
     if (result.success) {
       setSelectedWithdrawal(null);
       setWithdrawalData({ amount: '', address: '', bankDetails: '' });
+    } else if ('hold' in result && result.hold) {
+      setSelectedWithdrawal(null);
+      setWithdrawalData({ amount: '', address: '', bankDetails: '' });
+      setHoldMessage(result.message || 'Withdrawals are currently on hold for your account.');
+      setHoldDialogOpen(true);
     }
   };
 
@@ -373,6 +381,28 @@ export default function WithdrawPage() {
           </DialogContent>
         </Dialog>
       ))}
+
+      {/* Withdrawal Hold Notice */}
+      <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
+        <DialogContent
+          className="max-w-md"
+          style={{ backgroundColor: '#1D2330', border: '1px solid white' }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-white font-bold flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Withdrawal Not Available
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-white whitespace-pre-wrap">{holdMessage}</p>
+          <Button
+            onClick={() => setHoldDialogOpen(false)}
+            className="w-full bg-green-600 hover:bg-green-700"
+          >
+            OK
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Dashboard Modals */}
       <DashboardModals activeModal={activeModal} onClose={() => setActiveModal(null)} />

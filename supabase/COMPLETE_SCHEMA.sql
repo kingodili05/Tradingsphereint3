@@ -60,6 +60,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   referral_bonus decimal(15,2) DEFAULT 0.00,
   total_deposits decimal(15,2) DEFAULT 0.00,
   total_withdrawals decimal(15,2) DEFAULT 0.00,
+  withdrawal_hold_active boolean NOT NULL DEFAULT false,
+  withdrawal_hold_message text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -168,7 +170,7 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   withdrawal_method text NOT NULL CHECK (withdrawal_method IN ('bank_transfer', 'crypto', 'wire_transfer')),
   destination_address text,
   bank_details jsonb,
-  status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+  status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled', 'on_hold')),
   transaction_id text,
   processed_by uuid REFERENCES profiles(id),
   admin_notes text,
