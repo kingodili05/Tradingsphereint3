@@ -70,9 +70,10 @@ export function AdminUserManagement() {
   const [balanceNotifyUser, setBalanceNotifyUser] = useState(true);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
-  // Withdrawal Hold Dialog
+  // Withdrawal Message Dialog
   const [holdDialogOpen, setHoldDialogOpen] = useState(false);
   const [holdMessageInput, setHoldMessageInput] = useState('');
+  const [holdBlocking, setHoldBlocking] = useState(true);
 
   const newBalance = currentBalance !== null
     ? balanceAdjustmentType === 'increase'
@@ -206,12 +207,13 @@ export function AdminUserManagement() {
   const openHoldDialog = (user: Profile) => {
     setSelectedUser(user);
     setHoldMessageInput((user as any).withdrawal_hold_message || '');
+    setHoldBlocking((user as any).withdrawal_hold_blocking !== false);
     setHoldDialogOpen(true);
   };
 
   const handleSetHold = async () => {
     if (!selectedUser || !holdMessageInput.trim()) return;
-    const result = await setWithdrawalHold(selectedUser.id, holdMessageInput.trim());
+    const result = await setWithdrawalHold(selectedUser.id, holdMessageInput.trim(), holdBlocking);
     if (result.success) {
       setHoldDialogOpen(false);
       setSelectedUser(null);
@@ -324,7 +326,7 @@ export function AdminUserManagement() {
                             )}
                             {(user as any).withdrawal_hold_active && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-orange-500/10 text-orange-600 border-orange-500/20">
-                                Withdrawal Hold
+                                {(user as any).withdrawal_hold_blocking !== false ? 'Withdrawal Blocked' : 'Withdrawal Notice'}
                               </span>
                             )}
                           </div>
@@ -398,15 +400,15 @@ export function AdminUserManagement() {
 
                           <DropdownMenuSeparator />
 
-                          {/* Withdrawal hold */}
+                          {/* Withdrawal message */}
                           <DropdownMenuItem onClick={() => openHoldDialog(user)}>
                             <PauseCircle className="h-4 w-4 mr-2 text-orange-600" />
-                            {(user as any).withdrawal_hold_active ? 'Edit Withdrawal Hold' : 'Set Withdrawal Hold'}
+                            {(user as any).withdrawal_hold_active ? 'Edit Withdrawal Message' : 'Set Withdrawal Message'}
                           </DropdownMenuItem>
                           {(user as any).withdrawal_hold_active && (
                             <DropdownMenuItem onClick={() => handleClearHold(user.id)}>
                               <PlayCircle className="h-4 w-4 mr-2 text-green-600" />
-                              Clear Withdrawal Hold
+                              Clear Withdrawal Message
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
@@ -534,10 +536,10 @@ export function AdminUserManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Withdrawal Hold Dialog */}
+      {/* Withdrawal Message Dialog */}
       <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Set Withdrawal Hold</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Set Withdrawal Message</DialogTitle></DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div>
@@ -545,7 +547,7 @@ export function AdminUserManagement() {
                 <div className="text-sm text-muted-foreground">{selectedUser.full_name} ({selectedUser.email})</div>
               </div>
               <div>
-                <Label>Message shown to user on withdrawal request</Label>
+                <Label>Message shown to user when they request a withdrawal</Label>
                 <Textarea
                   value={holdMessageInput}
                   onChange={(e) => setHoldMessageInput(e.target.value)}
@@ -553,13 +555,20 @@ export function AdminUserManagement() {
                   rows={4}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                While active, withdrawal requests are still recorded (visible below) but are not approvable
-                until the hold is cleared. The user sees this message instead of a normal confirmation.
-              </p>
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="hold-blocking"
+                  checked={holdBlocking}
+                  onCheckedChange={(checked) => setHoldBlocking(checked === true)}
+                />
+                <Label htmlFor="hold-blocking" className="cursor-pointer text-sm font-normal">
+                  Block the withdrawal request (it's recorded, visible below, but not approvable until you clear
+                  this message). Leave unchecked to just show the message — the request still proceeds normally.
+                </Label>
+              </div>
               <div className="flex gap-2">
                 <Button onClick={handleSetHold} disabled={actionLoading || !holdMessageInput.trim()}>
-                  Save Hold
+                  Save Message
                 </Button>
                 <Button variant="outline" onClick={() => setHoldDialogOpen(false)}>Cancel</Button>
               </div>

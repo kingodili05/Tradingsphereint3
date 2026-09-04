@@ -24,7 +24,8 @@ import {
   Package,
   HelpCircle,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle
 } from 'lucide-react';
 import { signOut } from '@/lib/supabase-client';
 import { toast } from 'sonner';
@@ -45,8 +46,9 @@ export default function WithdrawPage() {
     bankDetails: '',
   });
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [holdDialogOpen, setHoldDialogOpen] = useState(false);
-  const [holdMessage, setHoldMessage] = useState('');
+  const [noticeDialogOpen, setNoticeDialogOpen] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [noticeBlocked, setNoticeBlocked] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -78,11 +80,17 @@ export default function WithdrawPage() {
     if (result.success) {
       setSelectedWithdrawal(null);
       setWithdrawalData({ amount: '', address: '', bankDetails: '' });
-    } else if ('hold' in result && result.hold) {
+      if ('message' in result && result.message) {
+        setNoticeMessage(result.message);
+        setNoticeBlocked(false);
+        setNoticeDialogOpen(true);
+      }
+    } else if ('blocked' in result && result.blocked) {
       setSelectedWithdrawal(null);
       setWithdrawalData({ amount: '', address: '', bankDetails: '' });
-      setHoldMessage(result.message || 'Withdrawals are currently on hold for your account.');
-      setHoldDialogOpen(true);
+      setNoticeMessage(result.message || 'Withdrawal request could not be submitted.');
+      setNoticeBlocked(true);
+      setNoticeDialogOpen(true);
     }
   };
 
@@ -382,21 +390,25 @@ export default function WithdrawPage() {
         </Dialog>
       ))}
 
-      {/* Withdrawal Hold Notice */}
-      <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
+      {/* Withdrawal Notice (from admin) */}
+      <Dialog open={noticeDialogOpen} onOpenChange={setNoticeDialogOpen}>
         <DialogContent
           className="max-w-md"
           style={{ backgroundColor: '#1D2330', border: '1px solid white' }}
         >
           <DialogHeader>
             <DialogTitle className="text-white font-bold flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Withdrawal Not Available
+              {noticeBlocked ? (
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              ) : (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              )}
+              {noticeBlocked ? 'Withdrawal Not Available' : 'Withdrawal Submitted'}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-white whitespace-pre-wrap">{holdMessage}</p>
+          <p className="text-white whitespace-pre-wrap">{noticeMessage}</p>
           <Button
-            onClick={() => setHoldDialogOpen(false)}
+            onClick={() => setNoticeDialogOpen(false)}
             className="w-full bg-green-600 hover:bg-green-700"
           >
             OK

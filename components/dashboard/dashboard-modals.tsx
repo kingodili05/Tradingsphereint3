@@ -90,8 +90,11 @@ export function DashboardModals({ activeModal, onClose }: DashboardModalsProps) 
     
     if (result.success) {
       setWithdrawData({ amount: '', currency: 'USD', withdrawal_method: '', destination_address: '' });
+      if ('message' in result && result.message) {
+        toast.success(result.message, { duration: 10000 });
+      }
       onClose();
-    } else if ('hold' in result && result.hold) {
+    } else if ('blocked' in result && result.blocked) {
       toast.error(result.message, { duration: 10000 });
     }
   };

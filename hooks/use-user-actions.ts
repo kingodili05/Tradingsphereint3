@@ -137,19 +137,23 @@ export function useUserActions() {
     
     setLoading(true);
     try {
-      // Admin-set hold takes priority over the balance check: still register the
-      // attempt so admins can see it, but don't let it reach the approval queue.
-      const { data: holdProfile } = await supabase
+      // Admin can attach a custom message to a user's withdrawal requests.
+      // withdrawal_hold_blocking decides whether it's just a notice (request
+      // still proceeds) or actually stops the request from reaching the
+      // approval queue.
+      const { data: notice } = await supabase
         .from('profiles')
-        .select('withdrawal_hold_active, withdrawal_hold_message')
+        .select('withdrawal_hold_active, withdrawal_hold_message, withdrawal_hold_blocking')
         .eq('id', userId)
         .single();
 
-      if (holdProfile?.withdrawal_hold_active) {
-        const holdMessage = holdProfile.withdrawal_hold_message
-          || 'Withdrawals are currently on hold for your account. Please contact support for details.';
+      const noticeActive = !!notice?.withdrawal_hold_active;
+      const noticeBlocking = notice?.withdrawal_hold_blocking !== false;
+      const noticeMessage = notice?.withdrawal_hold_message
+        || 'There is an issue with withdrawals on your account. Please contact support for details.';
 
-        const { error: holdInsertError } = await supabase
+      if (noticeActive && noticeBlocking) {
+        const { error: blockedInsertError } = await supabase
           .from('withdrawals')
           .insert({
             user_id: userId,
@@ -161,9 +165,9 @@ export function useUserActions() {
             status: 'on_hold',
           });
 
-        if (holdInsertError) throw holdInsertError;
+        if (blockedInsertError) throw blockedInsertError;
 
-        return { success: false, hold: true, message: holdMessage };
+        return { success: false, blocked: true, message: noticeMessage };
       }
 
       // Check balance first
@@ -197,6 +201,12 @@ export function useUserActions() {
 
       if (wData?.id) {
         sendNotification('/api/withdrawal-notification', { withdrawalId: wData.id, status: 'submitted' });
+      }
+
+      // Informational (non-blocking) notice: request still went through, but
+      // surface the admin's message alongside the normal success toast.
+      if (noticeActive) {
+        return { success: true, message: noticeMessage };
       }
 
       toast.success('Withdrawal request submitted successfully');

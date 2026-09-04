@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   total_withdrawals decimal(15,2) DEFAULT 0.00,
   withdrawal_hold_active boolean NOT NULL DEFAULT false,
   withdrawal_hold_message text,
+  withdrawal_hold_blocking boolean NOT NULL DEFAULT true,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );

@@ -110,7 +110,7 @@ export function useAdminActions() {
     }
   };
 
-  const setWithdrawalHold = async (userId: string, message: string) => {
+  const setWithdrawalHold = async (userId: string, message: string, blocking: boolean) => {
     if (!supabase) return { success: false };
 
     setLoading(true);
@@ -120,16 +120,17 @@ export function useAdminActions() {
         .update({
           withdrawal_hold_active: true,
           withdrawal_hold_message: message,
+          withdrawal_hold_blocking: blocking,
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', userId);
 
       if (error) throw error;
 
-      toast.success('Withdrawal hold applied');
+      toast.success('Withdrawal message saved');
       return { success: true };
     } catch (error: any) {
-      toast.error('Failed to apply withdrawal hold: ' + error.message);
+      toast.error('Failed to save withdrawal message: ' + error.message);
       return { success: false };
     } finally {
       setLoading(false);
@@ -146,16 +147,17 @@ export function useAdminActions() {
         .update({
           withdrawal_hold_active: false,
           withdrawal_hold_message: null,
+          withdrawal_hold_blocking: true,
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', userId);
 
       if (error) throw error;
 
-      toast.success('Withdrawal hold cleared');
+      toast.success('Withdrawal message cleared');
       return { success: true };
     } catch (error: any) {
-      toast.error('Failed to clear withdrawal hold: ' + error.message);
+      toast.error('Failed to clear withdrawal message: ' + error.message);
       return { success: false };
     } finally {
       setLoading(false);

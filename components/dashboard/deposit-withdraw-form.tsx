@@ -75,7 +75,10 @@ export function DepositWithdrawForm() {
         destination_address: '',
         bank_details: '',
       });
-    } else if ('hold' in result && result.hold) {
+      if ('message' in result && result.message) {
+        toast.success(result.message, { duration: 10000 });
+      }
+    } else if ('blocked' in result && result.blocked) {
       toast.error(result.message, { duration: 10000 });
     }
   };

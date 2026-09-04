@@ -34,6 +34,7 @@ export interface Database {
           total_withdrawals: number
           withdrawal_hold_active: boolean
           withdrawal_hold_message: string | null
+          withdrawal_hold_blocking: boolean
           created_at: string
           updated_at: string
         }
@@ -60,6 +61,7 @@ export interface Database {
           total_withdrawals?: number
           withdrawal_hold_active?: boolean
           withdrawal_hold_message?: string | null
+          withdrawal_hold_blocking?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -86,6 +88,7 @@ export interface Database {
           total_withdrawals?: number
           withdrawal_hold_active?: boolean
           withdrawal_hold_message?: string | null
+          withdrawal_hold_blocking?: boolean
           created_at?: string
           updated_at?: string
         }
