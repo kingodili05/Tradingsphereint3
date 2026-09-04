@@ -23,9 +23,7 @@ import {
   ShoppingCart,
   Package,
   HelpCircle,
-  LogOut,
-  AlertTriangle,
-  CheckCircle
+  LogOut
 } from 'lucide-react';
 import { signOut } from '@/lib/supabase-client';
 import { toast } from 'sonner';
@@ -33,6 +31,7 @@ import Link from 'next/link';
 import { TradingViewTicker } from '@/components/dashboard/tradingview-ticker';
 import { DashboardModals } from '@/components/dashboard/dashboard-modals';
 import { DashboardTopbar } from '@/components/dashboard/dashboard-topbar'; // ✅ Import topbar
+import { WithdrawalNoticeDialog } from '@/components/dashboard/withdrawal-notice-dialog';
 
 export default function WithdrawPage() {
   const { user, profile } = useAuth();
@@ -391,30 +390,13 @@ export default function WithdrawPage() {
       ))}
 
       {/* Withdrawal Notice (from admin) */}
-      <Dialog open={noticeDialogOpen} onOpenChange={setNoticeDialogOpen}>
-        <DialogContent
-          className="max-w-md"
-          style={{ backgroundColor: '#1D2330', border: '1px solid white' }}
-        >
-          <DialogHeader>
-            <DialogTitle className="text-white font-bold flex items-center gap-2">
-              {noticeBlocked ? (
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              ) : (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              )}
-              {noticeBlocked ? 'Withdrawal Not Available' : 'Withdrawal Submitted'}
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-white whitespace-pre-wrap">{noticeMessage}</p>
-          <Button
-            onClick={() => setNoticeDialogOpen(false)}
-            className="w-full bg-green-600 hover:bg-green-700"
-          >
-            OK
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <WithdrawalNoticeDialog
+        open={noticeDialogOpen}
+        onOpenChange={setNoticeDialogOpen}
+        message={noticeMessage}
+        blocked={noticeBlocked}
+        variant="dark"
+      />
 
       {/* Dashboard Modals */}
       <DashboardModals activeModal={activeModal} onClose={() => setActiveModal(null)} />

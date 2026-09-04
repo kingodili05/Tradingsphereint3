@@ -56,11 +56,14 @@ export default function UserFinancePage() {
       case 'completed': return 'bg-green-500';
       case 'processing': return 'bg-blue-500';
       case 'pending': return 'bg-yellow-500';
+      case 'on_hold': return 'bg-purple-500';
       case 'failed': return 'bg-red-500';
       case 'cancelled': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
+
+  const getStatusLabel = (status: string) => status === 'on_hold' ? 'On Hold' : status;
 
   const formatCurrency = (amount: number, currency: string) => {
     if (currency === 'USD') {
@@ -195,9 +198,14 @@ export default function UserFinancePage() {
                           </div>
                         </div>
                         <Badge className={getStatusColor(withdrawal.status)}>
-                          {withdrawal.status}
+                          {getStatusLabel(withdrawal.status)}
                         </Badge>
                       </div>
+                      {withdrawal.admin_notes && (
+                        <div className="text-sm bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 rounded p-2">
+                          {withdrawal.admin_notes}
+                        </div>
+                      )}
                       <div className="text-xs text-muted-foreground">
                         {new Date(withdrawal.created_at).toLocaleString()}
                       </div>

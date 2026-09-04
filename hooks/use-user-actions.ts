@@ -163,6 +163,7 @@ export function useUserActions() {
             destination_address: withdrawalData.destination_address,
             bank_details: withdrawalData.bank_details,
             status: 'on_hold',
+            admin_notes: noticeMessage,
           });
 
         if (blockedInsertError) throw blockedInsertError;
@@ -193,6 +194,7 @@ export function useUserActions() {
           destination_address: withdrawalData.destination_address,
           bank_details: withdrawalData.bank_details,
           status: 'pending',
+          admin_notes: noticeActive ? noticeMessage : undefined,
         })
         .select('id')
         .single();

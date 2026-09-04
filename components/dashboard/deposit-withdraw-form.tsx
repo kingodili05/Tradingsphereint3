@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase-client';
 import { useAuth } from '@/hooks/use-auth';
-import { toast } from 'sonner';
 import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { useUserActions } from '@/hooks/use-user-actions';
+import { WithdrawalNoticeDialog } from '@/components/dashboard/withdrawal-notice-dialog';
 
 export function DepositWithdrawForm() {
   const { user } = useAuth();
@@ -32,6 +32,10 @@ export function DepositWithdrawForm() {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [noticeBlocked, setNoticeBlocked] = useState(false);
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,10 +80,14 @@ export function DepositWithdrawForm() {
         bank_details: '',
       });
       if ('message' in result && result.message) {
-        toast.success(result.message, { duration: 10000 });
+        setNoticeMessage(result.message);
+        setNoticeBlocked(false);
+        setNoticeOpen(true);
       }
     } else if ('blocked' in result && result.blocked) {
-      toast.error(result.message, { duration: 10000 });
+      setNoticeMessage(result.message);
+      setNoticeBlocked(true);
+      setNoticeOpen(true);
     }
   };
 
@@ -241,6 +249,13 @@ export function DepositWithdrawForm() {
           </form>
         </CardContent>
       </Card>
+
+      <WithdrawalNoticeDialog
+        open={noticeOpen}
+        onOpenChange={setNoticeOpen}
+        message={noticeMessage}
+        blocked={noticeBlocked}
+      />
     </div>
   );
 }

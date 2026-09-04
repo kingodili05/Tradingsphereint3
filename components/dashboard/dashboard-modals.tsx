@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +12,7 @@ import { useUserActions } from '@/hooks/use-user-actions';
 import { useAuth } from '@/hooks/use-auth';
 import { useTrades } from '@/hooks/use-trades';
 import { useMessages } from '@/hooks/use-messages';
+import { WithdrawalNoticeDialog } from '@/components/dashboard/withdrawal-notice-dialog';
 import { 
   X, 
   BarChart3, 
@@ -63,6 +63,10 @@ export function DashboardModals({ activeModal, onClose }: DashboardModalsProps) 
     country: '',
   });
 
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [noticeBlocked, setNoticeBlocked] = useState(false);
+
   const handleDeposit = async () => {
     if (!user) return;
     
@@ -91,11 +95,16 @@ export function DashboardModals({ activeModal, onClose }: DashboardModalsProps) 
     if (result.success) {
       setWithdrawData({ amount: '', currency: 'USD', withdrawal_method: '', destination_address: '' });
       if ('message' in result && result.message) {
-        toast.success(result.message, { duration: 10000 });
+        setNoticeMessage(result.message);
+        setNoticeBlocked(false);
+        setNoticeOpen(true);
       }
       onClose();
     } else if ('blocked' in result && result.blocked) {
-      toast.error(result.message, { duration: 10000 });
+      setNoticeMessage(result.message);
+      setNoticeBlocked(true);
+      setNoticeOpen(true);
+      onClose();
     }
   };
 
@@ -581,35 +590,45 @@ export function DashboardModals({ activeModal, onClose }: DashboardModalsProps) 
     }
   };
 
-  if (!activeModal) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div 
-        className="rounded-lg border-2 border-gray-400 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto"
-        style={{ 
-          backgroundColor: 'rgba(29, 35, 48, 0.95)',
-          backdropFilter: 'blur(10px)'
-        }}
-      >
-        {/* Modal Header */}
-        <div className="border-b border-gray-600 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-white text-2xl font-bold capitalize">{activeModal}</h2>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-300 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 font-bold"
-            >
-              X
-            </button>
+    <>
+      {activeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div
+            className="rounded-lg border-2 border-gray-400 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            style={{
+              backgroundColor: 'rgba(29, 35, 48, 0.95)',
+              backdropFilter: 'blur(10px)'
+            }}
+          >
+            {/* Modal Header */}
+            <div className="border-b border-gray-600 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-white text-2xl font-bold capitalize">{activeModal}</h2>
+                <button
+                  onClick={onClose}
+                  className="text-white hover:text-gray-300 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 font-bold"
+                >
+                  X
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {renderModalContent()}
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Modal Content */}
-        <div className="p-6">
-          {renderModalContent()}
-        </div>
-      </div>
-    </div>
+      {/* Persists even after the modal above closes, so the notice can't be missed */}
+      <WithdrawalNoticeDialog
+        open={noticeOpen}
+        onOpenChange={setNoticeOpen}
+        message={noticeMessage}
+        blocked={noticeBlocked}
+      />
+    </>
   );
 }
